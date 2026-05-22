@@ -1,0 +1,129 @@
+import { StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f7f8f3',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 32,
+  },
+  header: {
+    marginBottom: 28,
+  },
+  brand: {
+    color: '#1f2937',
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  subtitle: {
+    color: '#6b7280',
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  formPanel: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 18,
+    shadowColor: '#111827',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 5,
+  },
+  tabs: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    flexDirection: 'row',
+    marginBottom: 24,
+    padding: 4,
+  },
+  tabButton: {
+    alignItems: 'center',
+    borderRadius: 6,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  activeTabButton: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#111827',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tabText: {
+    color: '#6b7280',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  activeTabText: {
+    color: '#0f766e',
+  },
+  form: {
+    gap: 16,
+  },
+  formTitle: {
+    color: '#111827',
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  fieldGroup: {
+    gap: 8,
+  },
+  label: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: '#111827',
+    fontSize: 16,
+    minHeight: 52,
+    paddingHorizontal: 14,
+  },
+  primaryButton: {
+    alignItems: 'center',
+    backgroundColor: '#0f766e',
+    borderRadius: 8,
+    justifyContent: 'center',
+    marginTop: 4,
+    minHeight: 52,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  linkButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
+  },
+  linkText: {
+    color: '#0f766e',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+});
+
+export default styles;
