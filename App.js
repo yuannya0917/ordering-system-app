@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 
+import { AuthContext } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CanteenPage from './pages/CanteenPage';
@@ -24,7 +25,18 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [cartItems, setCartItems] = useState([]);
+  const [userId, setUserId] = useState('');
   const [usertype, setUsertype] = useState('customer');
+
+  const handleLoginSuccess = (user) => {
+    setUserId(user.userId);
+    setUsertype(user.userType);
+  };
+
+  const clearCurrentUser = () => {
+    setUserId('');
+    setUsertype('customer');
+  };
 
   const addToCart = (dish) => {
     setCartItems((current) => {
@@ -66,61 +78,85 @@ export default function App() {
   );
 
   return (
-    <NavigationContainer>
-      <StatusBar style="dark" />
-      <Stack.Navigator
-        initialRouteName="Login"
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: '#f7f8f3',
-          },
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginPage} />
-        <Stack.Screen name="Register" component={RegisterPage} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
-        <Stack.Screen name="RoleSelect">
-          {(props) => (
-            <RoleSelectPage
-              {...props}
-              onSelectUsertype={setUsertype}
-            />
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="Canteen">
-          {(props) => (
-            <CanteenPage
-              {...props}
-              cartCount={cartCount}
-              cartTotal={cartTotal}
-              onAddDish={addToCart}
-              usertype={usertype}
-            />
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="Cart">
-          {(props) => (
-            <CartPage
-              {...props}
-              cartItems={cartItems}
-              cartTotal={cartTotal}
-            />
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="UserCenter">
-          {(props) => <UserCenterPage {...props} usertype={usertype} />}
-        </Stack.Screen>
-        <Stack.Screen name="DishReviews" component={DishReviewsPage} />
-        <Stack.Screen name="OrderManagement" component={OrderManagementPage} />
-        <Stack.Screen name="MyOrders" component={MyOrdersPage} />
-        <Stack.Screen name="OrderReview" component={OrderReviewPage} />
-        <Stack.Screen name="Revenue" component={RevenuePage} />
-        <Stack.Screen name="MyReviews" component={MyReviewsPage} />
-        <Stack.Screen name="ChangePassword" component={ChangePasswordPage} />
-        <Stack.Screen name="AccountCancel" component={AccountCancelPage} />
-        <Stack.Screen name="UserQuery" component={UserQueryPage} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AuthContext.Provider
+      value={{
+        userId,
+        usertype,
+        setCurrentUser: handleLoginSuccess,
+        clearCurrentUser,
+      }}
+    >
+      <NavigationContainer>
+        <StatusBar style="dark" />
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: '#f7f8f3',
+            },
+          }}
+        >
+          <Stack.Screen name="Login" component={LoginPage} />
+          <Stack.Screen name="Register" component={RegisterPage} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
+          <Stack.Screen name="RoleSelect">
+            {(props) => (
+              <RoleSelectPage
+                {...props}
+                onSelectUsertype={setUsertype}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="Canteen">
+            {(props) => (
+              <CanteenPage
+                {...props}
+                cartCount={cartCount}
+                cartTotal={cartTotal}
+                onAddDish={addToCart}
+                userId={userId}
+                usertype={usertype}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="Cart">
+            {(props) => (
+              <CartPage
+                {...props}
+                cartItems={cartItems}
+                cartTotal={cartTotal}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="UserCenter">
+            {(props) => (
+              <UserCenterPage
+                {...props}
+                userId={userId}
+                usertype={usertype}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="DishReviews" component={DishReviewsPage} />
+          <Stack.Screen name="OrderManagement">
+            {(props) => (
+              <OrderManagementPage
+                {...props}
+                userId={userId}
+                usertype={usertype}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="MyOrders" component={MyOrdersPage} />
+          <Stack.Screen name="OrderReview" component={OrderReviewPage} />
+          <Stack.Screen name="Revenue" component={RevenuePage} />
+          <Stack.Screen name="MyReviews" component={MyReviewsPage} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordPage} />
+          <Stack.Screen name="AccountCancel" component={AccountCancelPage} />
+          <Stack.Screen name="UserQuery" component={UserQueryPage} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AuthContext.Provider>
   );
 }

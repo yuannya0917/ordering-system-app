@@ -1,6 +1,9 @@
-import {api ,rawApi} from '../request'
+import { api } from '../request'
 
+export type DeleteAccountParams = {
+  userId: string
+}
 
-export function forgotPassword(params:any) {
-  return api.delete('/account/forgotPassword', params)
+export function deleteAccount(params: DeleteAccountParams) {
+  return api.delete('/account/delete', { params })
 }

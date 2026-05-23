@@ -8,14 +8,21 @@ import {
   View,
 } from 'react-native';
 
+import { deleteAccount } from '../api/account-cancel';
+import { useAuth } from '../contexts/AuthContext';
+
 const initialForm = {
   account: '',
-  securityQuestion: '',
-  securityAnswer: '',
 };
 
 export default function AccountCancelPage({ navigation }) {
-  const [form, setForm] = useState(initialForm);
+  const { clearCurrentUser, userId } = useAuth();
+  const [form, setForm] = useState({
+    ...initialForm,
+    account: userId,
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [riskChecked, setRiskChecked] = useState(false);
 
   const updateForm = (field, value) => {
@@ -23,6 +30,33 @@ export default function AccountCancelPage({ navigation }) {
       ...current,
       [field]: value,
     }));
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!form.account) {
+      setError('\u8bf7\u8f93\u5165\u8d26\u53f7');
+      return;
+    }
+
+    if (!riskChecked) {
+      setError('\u8bf7\u5148\u786e\u8ba4\u6ce8\u9500\u98ce\u9669');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      await deleteAccount({ userId: form.account });
+      clearCurrentUser();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u6ce8\u9500\u8d26\u53f7\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,28 +94,20 @@ export default function AccountCancelPage({ navigation }) {
             placeholder={'\u8bf7\u8f93\u5165\u8d26\u53f7'}
             value={form.account}
           />
-          <Field
-            label={'\u5bc6\u4fdd\u95ee\u9898'}
-            onChangeText={(value) => updateForm('securityQuestion', value)}
-            placeholder={'\u8bf7\u8f93\u5165\u5bc6\u4fdd\u95ee\u9898'}
-            value={form.securityQuestion}
-          />
-          <Field
-            label={'\u5bc6\u4fdd\u7b54\u6848'}
-            onChangeText={(value) => updateForm('securityAnswer', value)}
-            placeholder={'\u8bf7\u8f93\u5165\u5bc6\u4fdd\u7b54\u6848'}
-            value={form.securityAnswer}
-          />
           <TouchableOpacity
             activeOpacity={0.85}
-            disabled={!riskChecked}
+            disabled={!riskChecked || loading}
+            onPress={handleDeleteAccount}
             style={[
               styles.dangerButton,
-              !riskChecked && styles.disabledDangerButton,
+              (!riskChecked || loading) && styles.disabledDangerButton,
             ]}
           >
-            <Text style={styles.dangerButtonText}>{'\u786e\u8ba4\u6ce8\u9500\u8d26\u53f7'}</Text>
+            <Text style={styles.dangerButtonText}>
+              {loading ? '\u6ce8\u9500\u4e2d...' : '\u786e\u8ba4\u6ce8\u9500\u8d26\u53f7'}
+            </Text>
           </TouchableOpacity>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       </View>
     </SafeAreaView>
@@ -214,5 +240,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 17,
     fontWeight: '900',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

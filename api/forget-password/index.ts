@@ -1,10 +1,23 @@
-import {api ,rawApi} from '../request'
+import { rawApi } from '../request'
 
+export type VerifyType = 'password' | 'security'
 
-export function forgotPassword(params:any) {
-  return rawApi.put('/account/forgotPassword', params)
+export type ForgetPasswordByPasswordParams = {
+  userId: string
+  verifyType: 'byow'
+  oldPassword: string
+  newPassword: string
 }
 
-export function getInfo(params:any) {
-  return rawApi.put('/auth/info', params)
+export type ForgetPasswordBySecurityParams = {
+  userId: string
+  verifyType: 'sc'
+  securityAnswer: string
+  newPassword: string
+}
+
+export function forgotPassword(
+  params: ForgetPasswordByPasswordParams | ForgetPasswordBySecurityParams,
+) {
+  return rawApi.put('/account/forgotPassword', params)
 }

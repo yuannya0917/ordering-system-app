@@ -1,121 +1,176 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import {
+  getAllOrders,
+  getOrderDetails,
+  subscribeMerchantNewOrders,
+  updateOrderStatus as updateOrderStatusApi,
+} from '../api/order-management';
 
 const tabs = [
   {
     id: 'all',
+    status: undefined,
     label: '\u5168\u90e8',
   },
   {
     id: 'pending',
+    status: '0',
     label: '\u672a\u63a5\u5355',
   },
   {
     id: 'processing',
+    status: '1',
     label: '\u8fdb\u884c\u4e2d',
   },
   {
     id: 'completed',
+    status: '2',
     label: '\u5df2\u5b8c\u6210',
   },
 ];
 
-const initialOrders = [
-  {
-    id: 'NO20260523006',
-    time: '2026-05-23 12:20',
-    status: '\u672a\u63a5\u5355',
-    statusKey: 'pending',
-    detail: '\u9ed1\u6912\u725b\u67f3\u996d x1\uff0c\u67e0\u6aac\u8336 x1',
-    total: 24,
-  },
-  {
-    id: 'NO20260523005',
-    time: '2026-05-23 12:10',
-    status: '\u8fdb\u884c\u4e2d',
-    statusKey: 'processing',
-    detail: '\u756a\u8304\u725b\u8169\u9762 x1\uff0c\u7eff\u8c46\u6c99 x1',
-    total: 24,
-  },
-  {
-    id: 'NO20260523001',
-    time: '2026-05-23 11:30',
-    status: '\u5df2\u5b8c\u6210',
-    statusKey: 'completed',
-    detail: '\u9ec4\u7116\u9e21\u7c73\u996d x1\uff0c\u67e0\u6aac\u8336 x1',
-    total: 23,
-  },
-];
+const statusTextMap = {
+  0: '\u672a\u63a5\u5355',
+  1: '\u8fdb\u884c\u4e2d',
+  2: '\u5df2\u5b8c\u6210',
+};
+
+const statusKeyMap = {
+  0: 'pending',
+  1: 'processing',
+  2: 'completed',
+};
 
 export default function OrderManagementPage({ navigation }) {
   const [activeTab, setActiveTab] = useState('all');
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
+  const [detailsByOrderId, setDetailsByOrderId] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState('');
+  const [error, setError] = useState('');
 
-  const filteredOrders = useMemo(() => {
-    if (activeTab === 'all') {
-      return orders;
+  const loadOrders = useCallback(async () => {
+    const activeStatus = tabs.find((tab) => tab.id === activeTab)?.status;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const orderList = await getAllOrders(
+        activeStatus ? { orderStatus: activeStatus } : undefined
+      );
+      setOrders(orderList);
+
+      const detailEntries = await Promise.all(
+        orderList.map(async (order) => {
+          try {
+            const details = await getOrderDetails(order.orderId);
+            return [order.orderId, details];
+          } catch {
+            return [order.orderId, []];
+          }
+        })
+      );
+
+      setDetailsByOrderId(Object.fromEntries(detailEntries));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u8ba2\u5355\u5931\u8d25');
+    } finally {
+      setLoading(false);
     }
+  }, [activeTab]);
 
-    return orders.filter((order) => order.statusKey === activeTab);
-  }, [activeTab, orders]);
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
-  const updateOrderStatus = (orderId, statusKey, status) => {
-    setOrders((current) =>
-      current.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              status,
-              statusKey,
-            }
-          : order
-      )
-    );
+  useEffect(() => {
+    const unsubscribe = subscribeMerchantNewOrders({
+      onMessage: () => {
+        loadOrders();
+      },
+      onError: () => {
+        setError('\u8ba2\u5355\u5b9e\u65f6\u901a\u77e5\u8fde\u63a5\u5f02\u5e38');
+      },
+    });
+
+    return unsubscribe;
+  }, [loadOrders]);
+
+  const handleUpdateOrderStatus = async (orderId, orderStatus) => {
+    try {
+      setUpdatingOrderId(orderId);
+      setError('');
+      await updateOrderStatusApi({ orderId, orderStatus });
+      await loadOrders();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u66f4\u65b0\u8ba2\u5355\u72b6\u6001\u5931\u8d25');
+    } finally {
+      setUpdatingOrderId('');
+    }
   };
 
-  const renderOrder = ({ item }) => (
-    <View style={styles.orderCard}>
-      <View style={styles.orderHeader}>
-        <Text style={styles.orderId}>{item.id}</Text>
-        <Text
-          style={[
-            styles.status,
-            item.statusKey === 'pending' && styles.pendingStatus,
-            item.statusKey === 'processing' && styles.processingStatus,
-          ]}
-        >
-          {item.status}
-        </Text>
-      </View>
-      <Text style={styles.orderTime}>{'\u4e0b\u5355\u65f6\u95f4\uff1a'}{item.time}</Text>
-      <Text style={styles.orderDetail}>{'\u8ba2\u5355\u8be6\u60c5\uff1a'}{item.detail}</Text>
-      <View style={styles.orderFooter}>
-        <Text style={styles.total}>{'\u603b\u4ef7\uff1a\u00a5'}{item.total}</Text>
-        {item.statusKey === 'pending' && (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() =>
-              updateOrderStatus(item.id, 'processing', '\u8fdb\u884c\u4e2d')
-            }
-            style={styles.actionButton}
+  const renderOrder = ({ item }) => {
+    const statusKey = statusKeyMap[item.orderStatus] || 'completed';
+    const details = detailsByOrderId[item.orderId] || [];
+    const detailText = details.length
+      ? details
+          .map((detail) => `${detail.dishName} x${detail.dishNum}`)
+          .join('\uff0c')
+      : '\u6682\u65e0\u8be6\u60c5';
+
+    return (
+      <View style={styles.orderCard}>
+        <View style={styles.orderHeader}>
+          <Text style={styles.orderId}>{item.orderId}</Text>
+          <Text
+            style={[
+              styles.status,
+              statusKey === 'pending' && styles.pendingStatus,
+              statusKey === 'processing' && styles.processingStatus,
+            ]}
           >
-            <Text style={styles.actionButtonText}>{'\u63a5\u5355'}</Text>
-          </TouchableOpacity>
-        )}
-        {item.statusKey === 'processing' && (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() =>
-              updateOrderStatus(item.id, 'completed', '\u5df2\u5b8c\u6210')
-            }
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionButtonText}>{'\u51fa\u9910'}</Text>
-          </TouchableOpacity>
-        )}
+            {statusTextMap[item.orderStatus] || '\u672a\u77e5\u72b6\u6001'}
+          </Text>
+        </View>
+        <Text style={styles.orderTime}>{'\u4e0b\u5355\u65f6\u95f4\uff1a'}{item.orderTime}</Text>
+        <Text style={styles.orderDetail}>{'\u4e0b\u5355\u7528\u6237\uff1a'}{item.userId}</Text>
+        <Text style={styles.orderDetail}>{'\u8ba2\u5355\u8be6\u60c5\uff1a'}{detailText}</Text>
+        {item.orderNote ? (
+          <Text style={styles.orderDetail}>{'\u5907\u6ce8\uff1a'}{item.orderNote}</Text>
+        ) : null}
+        <View style={styles.orderFooter}>
+          <Text style={styles.total}>{'\u603b\u4ef7\uff1a\u00a5'}{item.orderPrice}</Text>
+          {statusKey === 'pending' && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={updatingOrderId === item.orderId}
+              onPress={() => handleUpdateOrderStatus(item.orderId, '1')}
+              style={styles.actionButton}
+            >
+              <Text style={styles.actionButtonText}>
+                {updatingOrderId === item.orderId ? '\u5904\u7406\u4e2d' : '\u63a5\u5355'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {statusKey === 'processing' && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={updatingOrderId === item.orderId}
+              onPress={() => handleUpdateOrderStatus(item.orderId, '2')}
+              style={styles.actionButton}
+            >
+              <Text style={styles.actionButtonText}>
+                {updatingOrderId === item.orderId ? '\u5904\u7406\u4e2d' : '\u51fa\u9910'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -158,10 +213,18 @@ export default function OrderManagementPage({ navigation }) {
         })}
       </View>
 
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <FlatList
         contentContainerStyle={styles.listContent}
-        data={filteredOrders}
-        keyExtractor={(item) => item.id}
+        data={orders}
+        keyExtractor={(item) => item.orderId}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {loading ? '\u8ba2\u5355\u52a0\u8f7d\u4e2d...' : '\u6682\u65e0\u8ba2\u5355'}
+          </Text>
+        }
+        onRefresh={loadOrders}
+        refreshing={loading}
         renderItem={renderOrder}
       />
     </SafeAreaView>
@@ -245,6 +308,20 @@ const styles = StyleSheet.create({
   listContent: {
     gap: 12,
     padding: 16,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  emptyText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '700',
+    paddingVertical: 24,
+    textAlign: 'center',
   },
   orderCard: {
     backgroundColor: '#ffffff',
