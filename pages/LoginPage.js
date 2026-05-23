@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState ,useEffect} from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 import AuthLayout from './AuthLayout';
@@ -6,6 +6,7 @@ import copy from './authCopy';
 import styles from './authStyles';
 import Field from './Field';
 
+import { login } from '../api/login';
 const initialForm = {
   account: '',
   password: '',
@@ -13,6 +14,8 @@ const initialForm = {
 
 export default function LoginPage({ navigation }) {
   const [form, setForm] = useState(initialForm);
+  const [error,setError]=useState()
+  const [loading,setLoading]=useState(false)
 
   const updateForm = (field, value) => {
     setForm((current) => ({
@@ -20,6 +23,34 @@ export default function LoginPage({ navigation }) {
       [field]: value,
     }));
   };
+
+  const handleLogin=async ()=>{
+    const params={
+      userId:form.account,
+      userPassword:form.password
+    }
+
+
+    try {
+      const res=await login(params)
+      
+      if(res.code=='400'){
+        console.error(`${res.message}`)
+      }
+      
+      if(res.data.userType==='admin'){
+        navigation.navigate('OrderManagement')
+      }else if(res.data.userType==='customer'){
+        navigation.navigate('Canteen')
+      }
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '账号或密码错误')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  
 
   return (
     <AuthLayout
@@ -61,7 +92,7 @@ export default function LoginPage({ navigation }) {
         </View>
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={() => navigation.navigate('RoleSelect')}
+          onPress={handleLogin}
           style={styles.primaryButton}
         >
           <Text style={styles.primaryButtonText}>{copy.login}</Text>
