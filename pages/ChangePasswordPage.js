@@ -8,6 +8,9 @@ import {
   View,
 } from 'react-native';
 
+import { changePassword } from '../api/change-password';
+import { useAuth } from '../contexts/AuthContext';
+
 const initialForm = {
   account: '',
   oldPassword: '',
@@ -16,13 +19,54 @@ const initialForm = {
 };
 
 export default function ChangePasswordPage({ navigation }) {
-  const [form, setForm] = useState(initialForm);
+  const { userId } = useAuth();
+  const [form, setForm] = useState({
+    ...initialForm,
+    account: userId,
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const updateForm = (field, value) => {
     setForm((current) => ({
       ...current,
       [field]: value,
     }));
+  };
+
+  const handleChangePassword = async () => {
+    if (!form.account || !form.oldPassword || !form.newPassword || !form.confirmPassword) {
+      setError('\u8bf7\u5b8c\u6574\u586b\u5199\u4fee\u6539\u5bc6\u7801\u4fe1\u606f');
+      return;
+    }
+
+    if (form.newPassword !== form.confirmPassword) {
+      setError('\u4e24\u6b21\u8f93\u5165\u7684\u65b0\u5bc6\u7801\u4e0d\u4e00\u81f4');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const res = await changePassword({
+        userId: form.account,
+        verifyType: 'password',
+        oldPassword: form.oldPassword,
+        newPassword: form.newPassword,
+      });
+
+      if (res.code === 400) {
+        setError(res.message || res.msg || '\u4fee\u6539\u5bc6\u7801\u5931\u8d25');
+        return;
+      }
+
+      navigation.goBack();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u4fee\u6539\u5bc6\u7801\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,8 +112,16 @@ export default function ChangePasswordPage({ navigation }) {
             secureTextEntry
             value={form.confirmPassword}
           />
-          <TouchableOpacity activeOpacity={0.85} style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>{'\u786e\u8ba4\u4fee\u6539'}</Text>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={loading}
+            onPress={handleChangePassword}
+            style={styles.primaryButton}
+          >
+            <Text style={styles.primaryButtonText}>
+              {loading ? '\u4fee\u6539\u4e2d...' : '\u786e\u8ba4\u4fee\u6539'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -175,5 +227,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 17,
     fontWeight: '900',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

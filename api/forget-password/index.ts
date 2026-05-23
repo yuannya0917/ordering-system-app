@@ -4,14 +4,14 @@ export type VerifyType = 'password' | 'security'
 
 export type ForgetPasswordByPasswordParams = {
   userId: string
-  verifyType: 'byow'
+  verifyType: 'password'
   oldPassword: string
   newPassword: string
 }
 
 export type ForgetPasswordBySecurityParams = {
   userId: string
-  verifyType: 'sc'
+  verifyType: 'security'
   securityAnswer: string
   newPassword: string
 }
