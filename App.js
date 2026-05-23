@@ -9,9 +9,13 @@ import CanteenPage from './pages/CanteenPage';
 import CartPage from './pages/CartPage';
 import AccountCancelPage from './pages/AccountCancelPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
+import DishReviewsPage from './pages/DishReviewsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MyReviewsPage from './pages/MyReviewsPage';
+import OrderManagementPage from './pages/OrderManagementPage';
 import MyOrdersPage from './pages/OrderHistoryPage';
 import OrderReviewPage from './pages/OrderReviewPage';
+import RevenuePage from './pages/RevenuePage';
 import RoleSelectPage from './pages/RoleSelectPage';
 import UserCenterPage from './pages/UserCenterPage';
 import UserQueryPage from './pages/UserQueryPage';
@@ -75,6 +79,7 @@ export default function App() {
       >
         <Stack.Screen name="Login" component={LoginPage} />
         <Stack.Screen name="Register" component={RegisterPage} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
         <Stack.Screen name="RoleSelect">
           {(props) => (
             <RoleSelectPage
@@ -103,9 +108,14 @@ export default function App() {
             />
           )}
         </Stack.Screen>
-        <Stack.Screen name="UserCenter" component={UserCenterPage} />
+        <Stack.Screen name="UserCenter">
+          {(props) => <UserCenterPage {...props} usertype={usertype} />}
+        </Stack.Screen>
+        <Stack.Screen name="DishReviews" component={DishReviewsPage} />
+        <Stack.Screen name="OrderManagement" component={OrderManagementPage} />
         <Stack.Screen name="MyOrders" component={MyOrdersPage} />
         <Stack.Screen name="OrderReview" component={OrderReviewPage} />
+        <Stack.Screen name="Revenue" component={RevenuePage} />
         <Stack.Screen name="MyReviews" component={MyReviewsPage} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordPage} />
         <Stack.Screen name="AccountCancel" component={AccountCancelPage} />

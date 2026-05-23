@@ -8,12 +8,13 @@ import Field from './Field';
 
 const initialForm = {
   account: '',
-  password: '',
   securityQuestion: '',
   securityAnswer: '',
+  newPassword: '',
+  confirmPassword: '',
 };
 
-export default function RegisterPage({ navigation }) {
+export default function ForgotPasswordPage({ navigation }) {
   const [form, setForm] = useState(initialForm);
 
   const updateForm = (field, value) => {
@@ -25,30 +26,23 @@ export default function RegisterPage({ navigation }) {
 
   return (
     <AuthLayout
-      activeRoute="Register"
+      activeRoute="Login"
       backTarget="Login"
       hideTabs
       navigation={navigation}
-      subtitle={copy.registerSubtitle}
+      subtitle={'\u901a\u8fc7\u5bc6\u4fdd\u4fe1\u606f\u627e\u56de\u5bc6\u7801'}
     >
       <View style={styles.form}>
         <View style={styles.formTitleRow}>
           <Text style={[styles.formTitle, styles.centerFormTitle]}>
-            {copy.registerTitle}
+            {'\u627e\u56de\u5bc6\u7801'}
           </Text>
         </View>
         <Field
           label={copy.account}
           onChangeText={(value) => updateForm('account', value)}
-          placeholder={copy.setAccountPlaceholder}
+          placeholder={copy.accountPlaceholder}
           value={form.account}
-        />
-        <Field
-          label={copy.password}
-          onChangeText={(value) => updateForm('password', value)}
-          placeholder={copy.setPasswordPlaceholder}
-          secureTextEntry
-          value={form.password}
         />
         <Field
           label={copy.securityQuestion}
@@ -62,8 +56,22 @@ export default function RegisterPage({ navigation }) {
           placeholder={copy.answerPlaceholder}
           value={form.securityAnswer}
         />
+        <Field
+          label={'\u65b0\u5bc6\u7801'}
+          onChangeText={(value) => updateForm('newPassword', value)}
+          placeholder={'\u8bf7\u8f93\u5165\u65b0\u5bc6\u7801'}
+          secureTextEntry
+          value={form.newPassword}
+        />
+        <Field
+          label={'\u786e\u8ba4\u65b0\u5bc6\u7801'}
+          onChangeText={(value) => updateForm('confirmPassword', value)}
+          placeholder={'\u8bf7\u518d\u6b21\u8f93\u5165\u65b0\u5bc6\u7801'}
+          secureTextEntry
+          value={form.confirmPassword}
+        />
         <TouchableOpacity activeOpacity={0.9} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>{copy.register}</Text>
+          <Text style={styles.primaryButtonText}>{'\u786e\u8ba4\u91cd\u7f6e'}</Text>
         </TouchableOpacity>
       </View>
     </AuthLayout>

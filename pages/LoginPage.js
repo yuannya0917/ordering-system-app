@@ -24,6 +24,7 @@ export default function LoginPage({ navigation }) {
   return (
     <AuthLayout
       activeRoute="Login"
+      hideTabs
       navigation={navigation}
       subtitle={copy.loginSubtitle}
     >
@@ -42,19 +43,28 @@ export default function LoginPage({ navigation }) {
           secureTextEntry
           value={form.password}
         />
+        <View style={styles.loginLinkRow}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate('Register')}
+            style={styles.inlineLinkButton}
+          >
+            <Text style={styles.linkText}>{copy.register}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate('ForgotPassword')}
+            style={styles.inlineLinkButton}
+          >
+            <Text style={styles.linkText}>{'\u5fd8\u8bb0\u5bc6\u7801'}</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => navigation.navigate('RoleSelect')}
           style={styles.primaryButton}
         >
           <Text style={styles.primaryButtonText}>{copy.login}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={() => navigation.navigate('Register')}
-          style={styles.linkButton}
-        >
-          <Text style={styles.linkText}>{copy.goRegister}</Text>
         </TouchableOpacity>
       </View>
     </AuthLayout>

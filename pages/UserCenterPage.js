@@ -5,7 +5,9 @@ const user = {
   uid: 'NUAA-20260523',
 };
 
-export default function UserCenterPage({ navigation }) {
+export default function UserCenterPage({ navigation, usertype }) {
+  const isAdmin = usertype === 'admin';
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.topBar}>
@@ -30,51 +32,69 @@ export default function UserCenterPage({ navigation }) {
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('MyOrders')}
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionText}>{'\u6211\u7684\u8ba2\u5355'}</Text>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('MyReviews')}
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionText}>{'\u6211\u7684\u8bc4\u8bba'}</Text>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('ChangePassword')}
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionText}>{'\u4fee\u6539\u5bc6\u7801'}</Text>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('UserQuery')}
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionText}>{'\u7528\u6237\u67e5\u8be2'}</Text>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('AccountCancel')}
-            style={styles.actionButton}
-          >
-            <Text style={[styles.actionText, styles.dangerActionText]}>
-              {'\u6ce8\u9500\u8d26\u53f7'}
-            </Text>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </TouchableOpacity>
+          {isAdmin ? (
+            <>
+              <ActionButton
+                label={'\u4fee\u6539\u83dc\u5355'}
+                onPress={() => navigation.navigate('Canteen')}
+              />
+              <ActionButton
+                label={'\u7528\u6237\u67e5\u8be2'}
+                onPress={() => navigation.navigate('UserQuery')}
+              />
+              <ActionButton
+                label={'\u67e5\u770b\u8425\u4e1a\u989d'}
+                onPress={() => navigation.navigate('Revenue')}
+              />
+              <ActionButton
+                label={'\u4fee\u6539\u5bc6\u7801'}
+                onPress={() => navigation.navigate('ChangePassword')}
+              />
+              <ActionButton
+                danger
+                label={'\u6ce8\u9500\u8d26\u53f7'}
+                onPress={() => navigation.navigate('AccountCancel')}
+              />
+            </>
+          ) : (
+            <>
+              <ActionButton
+                label={'\u6211\u7684\u8ba2\u5355'}
+                onPress={() => navigation.navigate('MyOrders')}
+              />
+              <ActionButton
+                label={'\u6211\u7684\u8bc4\u8bba'}
+                onPress={() => navigation.navigate('MyReviews')}
+              />
+              <ActionButton
+                label={'\u4fee\u6539\u5bc6\u7801'}
+                onPress={() => navigation.navigate('ChangePassword')}
+              />
+              <ActionButton
+                danger
+                label={'\u6ce8\u9500\u8d26\u53f7'}
+                onPress={() => navigation.navigate('AccountCancel')}
+              />
+            </>
+          )}
         </View>
       </View>
     </SafeAreaView>
+  );
+}
+
+function ActionButton({ danger, label, onPress }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={styles.actionButton}
+    >
+      <Text style={[styles.actionText, danger && styles.dangerActionText]}>
+        {label}
+      </Text>
+      <Text style={styles.actionArrow}>{'>'}</Text>
+    </TouchableOpacity>
   );
 }
 

@@ -230,7 +230,14 @@ export default function CanteenPage({
   const renderDish = ({ item }) => (
     <View style={styles.dishCard}>
       <View style={styles.dishHeader}>
-        <Text style={styles.dishName}>{item.name}</Text>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={() => navigation.navigate('DishReviews', { dish: item })}
+          style={styles.dishInfoButton}
+        >
+          <Text style={styles.dishName}>{item.name}</Text>
+          <Text style={styles.dishDesc}>{item.desc}</Text>
+        </TouchableOpacity>
         <View style={styles.dishAction}>
           <Text style={styles.dishPrice}>{'\u00a5'}{item.price}</Text>
           {!isAdmin && (
@@ -271,7 +278,6 @@ export default function CanteenPage({
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={styles.dishDesc}>{item.desc}</Text>
     </View>
   );
 
@@ -546,9 +552,11 @@ const styles = StyleSheet.create({
   },
   dishName: {
     color: '#111827',
-    flex: 1,
     fontSize: 17,
     fontWeight: '800',
+  },
+  dishInfoButton: {
+    flex: 1,
   },
   dishPrice: {
     color: '#dc2626',

@@ -5,6 +5,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f7f8f3',
   },
+  authTopBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    minHeight: 58,
+    paddingHorizontal: 16,
+  },
+  authTopBarButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
+    minWidth: 50,
+  },
+  authTopBarTitleSpace: {
+    flex: 1,
+  },
   keyboardView: {
     flex: 1,
   },
@@ -83,6 +98,19 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
   },
+  formTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  centerFormTitle: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  formTitleSideButton: {
+    justifyContent: 'center',
+    minHeight: 36,
+    width: 52,
+  },
   fieldGroup: {
     gap: 8,
   },
@@ -118,6 +146,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 40,
+  },
+  loginLinkRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  inlineLinkButton: {
+    justifyContent: 'center',
+    minHeight: 36,
   },
   linkText: {
     color: '#0f766e',

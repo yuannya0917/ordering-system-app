@@ -1,9 +1,11 @@
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function RoleSelectPage({ navigation, onSelectUsertype }) {
-  const enterCanteen = (selectedUsertype) => {
+  const enterApp = (selectedUsertype) => {
     onSelectUsertype(selectedUsertype);
-    navigation.navigate('Canteen');
+    navigation.navigate(
+      selectedUsertype === 'admin' ? 'OrderManagement' : 'Canteen'
+    );
   };
 
   return (
@@ -23,7 +25,7 @@ export default function RoleSelectPage({ navigation, onSelectUsertype }) {
       <View style={styles.content}>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => enterCanteen('customer')}
+          onPress={() => enterApp('customer')}
           style={styles.roleButton}
         >
           <Text style={styles.roleTitle}>{'\u666e\u901a\u7528\u6237'}</Text>
@@ -32,7 +34,7 @@ export default function RoleSelectPage({ navigation, onSelectUsertype }) {
 
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => enterCanteen('admin')}
+          onPress={() => enterApp('admin')}
           style={styles.roleButton}
         >
           <Text style={styles.roleTitle}>{'\u7ba1\u7406\u5458'}</Text>
