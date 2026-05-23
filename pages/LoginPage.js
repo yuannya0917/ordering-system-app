@@ -42,7 +42,11 @@ export default function LoginPage({ navigation }) {
           secureTextEntry
           value={form.password}
         />
-        <TouchableOpacity activeOpacity={0.9} style={styles.primaryButton}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('RoleSelect')}
+          style={styles.primaryButton}
+        >
           <Text style={styles.primaryButtonText}>{copy.login}</Text>
         </TouchableOpacity>
         <TouchableOpacity
