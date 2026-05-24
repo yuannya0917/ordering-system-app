@@ -110,8 +110,8 @@ export default function ForgotPasswordPage({ navigation }) {
               onPress={() => updateForm('verifyType', 'password')}
               style={{
                 alignItems: 'center',
-                backgroundColor: form.verifyType === 'password' ? '#0f766e' : '#f9fafb',
-                borderColor: form.verifyType === 'password' ? '#0f766e' : '#d1d5db',
+                backgroundColor: form.verifyType === 'password' ? '#ea580c' : '#f9fafb',
+                borderColor: form.verifyType === 'password' ? '#ea580c' : '#d1d5db',
                 borderRadius: 8,
                 borderWidth: 1,
                 flex: 1,
@@ -134,8 +134,8 @@ export default function ForgotPasswordPage({ navigation }) {
               onPress={() => updateForm('verifyType', 'security')}
               style={{
                 alignItems: 'center',
-                backgroundColor: form.verifyType === 'security' ? '#0f766e' : '#f9fafb',
-                borderColor: form.verifyType === 'security' ? '#0f766e' : '#d1d5db',
+                backgroundColor: form.verifyType === 'security' ? '#ea580c' : '#f9fafb',
+                borderColor: form.verifyType === 'security' ? '#ea580c' : '#d1d5db',
                 borderRadius: 8,
                 borderWidth: 1,
                 flex: 1,

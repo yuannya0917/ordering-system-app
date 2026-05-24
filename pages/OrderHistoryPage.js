@@ -190,7 +190,7 @@ export default function MyOrdersPage({ navigation }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#f7f8f3',
+    backgroundColor: '#fff7ed',
     flex: 1,
   },
   topBar: {
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   topBarButtonText: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   activeTabButton: {
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
   },
   tabText: {
     color: '#4b5563',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   status: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontSize: 13,
     fontWeight: '800',
   },
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   reviewButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     minHeight: 38,

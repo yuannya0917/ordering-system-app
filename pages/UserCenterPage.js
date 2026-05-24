@@ -136,7 +136,7 @@ function ActionButton({ danger, label, onPress }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#f7f8f3',
+    backgroundColor: '#fff7ed',
     flex: 1,
   },
   topBar: {
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   topBarButtonText: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   avatar: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 34,
     height: 68,
     justifyContent: 'center',

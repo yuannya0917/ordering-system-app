@@ -913,7 +913,7 @@ export default function CanteenPage({
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#f7f8f3',
+    backgroundColor: '#fff7ed',
     flex: 1,
   },
   topBar: {
@@ -933,13 +933,13 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   topBarButtonText: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontSize: 15,
     fontWeight: '700',
   },
   avatarButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 18,
     height: 36,
     justifyContent: 'center',
@@ -1009,7 +1009,7 @@ const styles = StyleSheet.create({
   },
   activeMenuButton: {
     backgroundColor: '#ffffff',
-    borderLeftColor: '#0f766e',
+    borderLeftColor: '#ea580c',
   },
   menuEditButton: {
     alignItems: 'center',
@@ -1029,7 +1029,7 @@ const styles = StyleSheet.create({
   },
   menuAddButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     marginHorizontal: 12,
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeMenuText: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontWeight: '800',
   },
   dishColumn: {
@@ -1125,8 +1125,8 @@ const styles = StyleSheet.create({
   },
   dishEditButton: {
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderColor: '#93c5fd',
+    backgroundColor: '#fff7ed',
+    borderColor: '#fb923c',
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: 'center',
@@ -1135,13 +1135,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   dishEditButtonText: {
-    color: '#1d4ed8',
+    color: '#c2410c',
     fontSize: 13,
     fontWeight: '800',
   },
   dishAddButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     minHeight: 44,
@@ -1153,7 +1153,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     height: 32,
     justifyContent: 'center',
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
   },
   cartButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     minHeight: 46,
@@ -1285,7 +1285,7 @@ const styles = StyleSheet.create({
   },
   coverUploadButton: {
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#ea580c',
     borderColor: '#93c5fd',
     borderRadius: 8,
     borderWidth: 1,
@@ -1294,7 +1294,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   coverUploadButtonText: {
-    color: '#1d4ed8',
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '800',
   },
@@ -1311,7 +1311,7 @@ const styles = StyleSheet.create({
   },
   modalSaveButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     flex: 1,
     justifyContent: 'center',
@@ -1347,7 +1347,7 @@ const styles = StyleSheet.create({
   },
   modalCloseButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     marginTop: 14,

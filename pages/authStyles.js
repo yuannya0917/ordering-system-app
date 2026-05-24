@@ -6,7 +6,7 @@ const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f7f8f3',
+    backgroundColor: '#fff7ed',
   },
   authTopBar: {
     alignItems: 'center',
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   activeTabText: {
-    color: '#0f766e',
+    color: '#ea580c',
   },
   form: {
     gap: 16,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     marginTop: 4,
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   linkText: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontSize: 14,
     fontWeight: '700',
   },

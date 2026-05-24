@@ -93,7 +93,7 @@ export default function App() {
           screenOptions={{
             headerShown: false,
             contentStyle: {
-              backgroundColor: '#f7f8f3',
+              backgroundColor: '#fff7ed',
             },
           }}
         >

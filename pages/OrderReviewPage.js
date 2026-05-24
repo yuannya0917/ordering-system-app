@@ -131,7 +131,7 @@ export default function OrderReviewPage({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#f7f8f3',
+    backgroundColor: '#fff7ed',
     flex: 1,
   },
   topBar: {
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   topBarButtonText: {
-    color: '#0f766e',
+    color: '#ea580c',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     alignItems: 'center',
-    backgroundColor: '#0f766e',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     minHeight: 52,
