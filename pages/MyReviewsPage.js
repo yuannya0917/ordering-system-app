@@ -1,30 +1,44 @@
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const reviews = [
-  {
-    id: 'R001',
-    dish: '\u9ec4\u7116\u9e21\u7c73\u996d',
-    date: '2026-05-23',
-    rating: 5,
-    content: '\u5473\u9053\u4e0d\u9519\uff0c\u7c73\u996d\u548c\u6c64\u6c41\u5f88\u642d\u3002',
-  },
-  {
-    id: 'R002',
-    dish: '\u91cd\u5e86\u5c0f\u9762',
-    date: '2026-05-22',
-    rating: 4,
-    content: '\u8fa3\u5ea6\u521a\u597d\uff0c\u4e0b\u6b21\u60f3\u8bd5\u8bd5\u52a0\u8fa3\u3002',
-  },
-];
+import { getMyReviews } from '../api/my-review';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MyReviewsPage({ navigation }) {
+  const { userId } = useAuth();
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadReviews = useCallback(async () => {
+    if (!userId) {
+      setError('\u5f53\u524d\u7528\u6237\u4fe1\u606f\u4e0d\u5b8c\u6574');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const result = await getMyReviews(userId);
+      setReviews(result);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u6211\u7684\u8bc4\u8bba\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
+
   const renderReview = ({ item }) => (
     <View style={styles.reviewCard}>
       <View style={styles.reviewHeader}>
-        <Text style={styles.dishName}>{item.dish}</Text>
-        <Text style={styles.rating}>{item.rating}{'\u5206'}</Text>
+        <Text style={styles.dishName}>{item.orderId}</Text>
+        <Text style={styles.rating}>{item.commentId}</Text>
       </View>
-      <Text style={styles.reviewDate}>{item.date}</Text>
+      <Text style={styles.reviewDate}>{item.publishTime}</Text>
       <Text style={styles.reviewContent}>{item.content}</Text>
     </View>
   );
@@ -43,10 +57,18 @@ export default function MyReviewsPage({ navigation }) {
         <View style={styles.topBarButton} />
       </View>
 
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <FlatList
         contentContainerStyle={styles.listContent}
         data={reviews}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.commentId}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {loading ? '\u8bc4\u8bba\u52a0\u8f7d\u4e2d...' : '\u6682\u65e0\u8bc4\u8bba'}
+          </Text>
+        }
+        onRefresh={loadReviews}
+        refreshing={loading}
         renderItem={renderReview}
       />
     </SafeAreaView>
@@ -89,6 +111,19 @@ const styles = StyleSheet.create({
   listContent: {
     gap: 12,
     padding: 16,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  emptyText: {
+    color: '#6b7280',
+    fontSize: 15,
+    paddingTop: 28,
+    textAlign: 'center',
   },
   reviewCard: {
     backgroundColor: '#ffffff',

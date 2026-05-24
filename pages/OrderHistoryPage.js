@@ -1,35 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const orders = [
-  {
-    id: 'NO20260523002',
-    date: '2026-05-23 12:05',
-    dishes: ['\u756a\u8304\u725b\u8169\u9762', '\u7eff\u8c46\u6c99'],
-    items: '\u756a\u8304\u725b\u8169\u9762 x1\uff0c\u7eff\u8c46\u6c99 x1',
-    status: '\u8fdb\u884c\u4e2d',
-    statusKey: 'processing',
-    total: 24,
-  },
-  {
-    id: 'NO20260523001',
-    date: '2026-05-23 11:30',
-    dishes: ['\u9ec4\u7116\u9e21\u7c73\u996d', '\u67e0\u6aac\u8336'],
-    items: '\u9ec4\u7116\u9e21\u7c73\u996d x1\uff0c\u67e0\u6aac\u8336 x1',
-    status: '\u5df2\u5b8c\u6210',
-    statusKey: 'completed',
-    total: 23,
-  },
-  {
-    id: 'NO20260522003',
-    date: '2026-05-22 18:10',
-    dishes: ['\u91cd\u5e86\u5c0f\u9762', '\u9e21\u86cb\u704c\u997c'],
-    items: '\u91cd\u5e86\u5c0f\u9762 x1\uff0c\u9e21\u86cb\u704c\u997c x1',
-    status: '\u5df2\u5b8c\u6210',
-    statusKey: 'completed',
-    total: 19,
-  },
-];
+import { getOrderDetails, getOrderHistory } from '../api/order-history';
+import { useAuth } from '../contexts/AuthContext';
 
 const tabs = [
   {
@@ -46,46 +19,112 @@ const tabs = [
   },
 ];
 
+const statusTextMap = {
+  0: '\u672a\u63a5\u5355',
+  1: '\u8fdb\u884c\u4e2d',
+  2: '\u5df2\u5b8c\u6210',
+};
+
+const statusKeyMap = {
+  0: 'pending',
+  1: 'processing',
+  2: 'completed',
+};
+
 export default function MyOrdersPage({ navigation }) {
+  const { userId } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [detailsByOrderId, setDetailsByOrderId] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadOrders = useCallback(async () => {
+    if (!userId) {
+      setError('\u5f53\u524d\u7528\u6237\u4fe1\u606f\u4e0d\u5b8c\u6574');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const orderList = await getOrderHistory(userId);
+      setOrders(orderList);
+
+      const detailEntries = await Promise.all(
+        orderList.map(async (order) => {
+          try {
+            const details = await getOrderDetails(order.orderId);
+            return [order.orderId, details];
+          } catch {
+            return [order.orderId, []];
+          }
+        })
+      );
+
+      setDetailsByOrderId(Object.fromEntries(detailEntries));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u5386\u53f2\u8ba2\u5355\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const filteredOrders = useMemo(() => {
     if (activeTab === 'all') {
       return orders;
     }
 
-    return orders.filter((order) => order.statusKey === activeTab);
-  }, [activeTab]);
+    return orders.filter((order) => statusKeyMap[order.orderStatus] === activeTab);
+  }, [activeTab, orders]);
 
-  const renderOrder = ({ item }) => (
-    <View style={styles.orderCard}>
-      <View style={styles.orderHeader}>
-        <Text style={styles.orderId}>{item.id}</Text>
-        <Text
-          style={[
-            styles.status,
-            item.statusKey === 'processing' && styles.processingStatus,
-          ]}
-        >
-          {item.status}
-        </Text>
-      </View>
-      <Text style={styles.orderDate}>{item.date}</Text>
-      <Text style={styles.orderItems}>{item.items}</Text>
-      <View style={styles.orderFooter}>
-        <Text style={styles.total}>{'\u5408\u8ba1\uff1a\u00a5'}{item.total}</Text>
-        {item.statusKey === 'completed' && (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('OrderReview', { order: item })}
-            style={styles.reviewButton}
+  const renderOrder = ({ item }) => {
+    const statusKey = statusKeyMap[item.orderStatus] || 'completed';
+    const details = detailsByOrderId[item.orderId] || [];
+    const items = details.length
+      ? details
+          .map((detail) => `${detail.dishName} \u00a5${detail.dishPrice} x${detail.dishNum}`)
+          .join('\uff0c')
+      : '\u6682\u65e0\u8be6\u60c5';
+
+    return (
+      <View style={styles.orderCard}>
+        <View style={styles.orderHeader}>
+          <Text style={styles.orderId}>{item.orderId}</Text>
+          <Text
+            style={[
+              styles.status,
+              statusKey === 'processing' && styles.processingStatus,
+            ]}
           >
-            <Text style={styles.reviewButtonText}>{'\u8bc4\u4ef7'}</Text>
-          </TouchableOpacity>
-        )}
+            {statusTextMap[item.orderStatus] || '\u672a\u77e5\u72b6\u6001'}
+          </Text>
+        </View>
+        <Text style={styles.orderDate}>{item.orderTime}</Text>
+        <Text style={styles.orderItems}>{items}</Text>
+        {item.orderNote ? (
+          <Text style={styles.orderItems}>{'\u5907\u6ce8\uff1a'}{item.orderNote}</Text>
+        ) : null}
+        <View style={styles.orderFooter}>
+          <Text style={styles.total}>{'\u5408\u8ba1\uff1a\u00a5'}{item.orderPrice}</Text>
+          {statusKey === 'completed' && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('OrderReview', { order: item, details })}
+              style={styles.reviewButton}
+            >
+              <Text style={styles.reviewButtonText}>{'\u8bc4\u4ef7'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -120,10 +159,18 @@ export default function MyOrdersPage({ navigation }) {
         })}
       </View>
 
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <FlatList
         contentContainerStyle={styles.listContent}
         data={filteredOrders}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.orderId}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {loading ? '\u8ba2\u5355\u52a0\u8f7d\u4e2d...' : '\u6682\u65e0\u8ba2\u5355'}
+          </Text>
+        }
+        onRefresh={loadOrders}
+        refreshing={loading}
         renderItem={renderOrder}
       />
     </SafeAreaView>
@@ -166,6 +213,19 @@ const styles = StyleSheet.create({
   listContent: {
     gap: 12,
     padding: 16,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  emptyText: {
+    color: '#6b7280',
+    fontSize: 15,
+    paddingTop: 28,
+    textAlign: 'center',
   },
   tabs: {
     backgroundColor: '#ffffff',

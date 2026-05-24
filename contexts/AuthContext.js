@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 export const AuthContext = createContext({
   userId: '',
-  usertype: 'customer',
+  usertype: 'admin',
   setCurrentUser: () => {},
   clearCurrentUser: () => {},
 });

@@ -1,12 +1,42 @@
+import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const user = {
-  name: '\u5357\u822a\u7528\u6237',
-  uid: 'NUAA-20260523',
-};
+import { getUserInfo } from '../api/user-center/inde';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function UserCenterPage({ navigation, usertype }) {
+export default function UserCenterPage({ navigation }) {
+  const { userId, usertype } = useAuth();
+  const [userInfo, setUserInfo] = useState(null);
+  const [error, setError] = useState('');
   const isAdmin = usertype === 'admin';
+
+  const loadUserInfo = useCallback(async () => {
+    if (!userId) {
+      setError('\u5f53\u524d\u7528\u6237\u4fe1\u606f\u4e0d\u5b8c\u6574');
+      return;
+    }
+
+    try {
+      setError('');
+      const res = await getUserInfo({
+        userId,
+        currentUserId: userId,
+      });
+
+      if (res.code === 400) {
+        setError(res.message || '\u83b7\u53d6\u7528\u6237\u4fe1\u606f\u5931\u8d25');
+        return;
+      }
+
+      setUserInfo(res.data);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u7528\u6237\u4fe1\u606f\u5931\u8d25');
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadUserInfo();
+  }, [loadUserInfo]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -27,8 +57,11 @@ export default function UserCenterPage({ navigation, usertype }) {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{'\u7528'}</Text>
           </View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userUid}>{'UID\uff1a'}{user.uid}</Text>
+          <Text style={styles.userName}>
+            {userInfo?.username || userId || '\u672a\u77e5\u7528\u6237'}
+          </Text>
+          <Text style={styles.userUid}>{'UID\uff1a'}{userInfo?.userId || userId}</Text>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
 
         <View style={styles.actions}>
@@ -167,6 +200,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     marginTop: 8,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 10,
+    textAlign: 'center',
   },
   actions: {
     gap: 12,
