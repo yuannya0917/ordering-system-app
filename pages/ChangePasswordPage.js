@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   SafeAreaView,
@@ -10,14 +10,16 @@ import {
   View,
 } from 'react-native';
 
-import { changePassword } from '../api/change-password';
+import { changePassword, getSecurityQuestion } from '../api/change-password';
 import { useAuth } from '../contexts/AuthContext';
 
 const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
 const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 const initialForm = {
   account: '',
+  verifyType: 'password',
   oldPassword: '',
+  securityAnswer: '',
   newPassword: '',
   confirmPassword: '',
 };
@@ -30,6 +32,15 @@ export default function ChangePasswordPage({ navigation }) {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityQuestionLoading, setSecurityQuestionLoading] = useState(false);
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      account: current.account || userId,
+    }));
+  }, [userId]);
 
   const updateForm = (field, value) => {
     setForm((current) => ({
@@ -38,9 +49,65 @@ export default function ChangePasswordPage({ navigation }) {
     }));
   };
 
+  useEffect(() => {
+    const account = form.account.trim();
+    if (form.verifyType !== 'security') {
+      setSecurityQuestion('');
+      return undefined;
+    }
+
+    if (!account) {
+      setSecurityQuestion('');
+      return undefined;
+    }
+
+    let ignore = false;
+
+    const loadSecurityQuestion = async () => {
+      try {
+        setSecurityQuestionLoading(true);
+        setError('');
+        const question = await getSecurityQuestion(account);
+        if (!ignore) {
+          setSecurityQuestion(question || '\u6682\u672a\u8bbe\u7f6e\u5bc6\u4fdd\u95ee\u9898');
+        }
+      } catch (requestError) {
+        if (!ignore) {
+          setSecurityQuestion('');
+          setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u5bc6\u4fdd\u95ee\u9898\u5931\u8d25');
+        }
+      } finally {
+        if (!ignore) {
+          setSecurityQuestionLoading(false);
+        }
+      }
+    };
+
+    loadSecurityQuestion();
+
+    return () => {
+      ignore = true;
+    };
+  }, [form.account, form.verifyType]);
+
   const handleChangePassword = async () => {
-    if (!form.account || !form.oldPassword || !form.newPassword || !form.confirmPassword) {
+    if (!form.account || !form.newPassword || !form.confirmPassword) {
       setError('\u8bf7\u5b8c\u6574\u586b\u5199\u4fee\u6539\u5bc6\u7801\u4fe1\u606f');
+      return;
+    }
+
+    if (form.verifyType === 'password' && !form.oldPassword) {
+      setError('\u8bf7\u8f93\u5165\u539f\u5bc6\u7801');
+      return;
+    }
+
+    if (form.verifyType === 'security' && !form.securityAnswer) {
+      setError('\u8bf7\u8f93\u5165\u5bc6\u4fdd\u7b54\u6848');
+      return;
+    }
+
+    if (form.newPassword.length < 6) {
+      setError('\u65b0\u5bc6\u7801\u81f3\u5c116\u4f4d');
       return;
     }
 
@@ -53,13 +120,22 @@ export default function ChangePasswordPage({ navigation }) {
       setLoading(true);
       setError('');
 
-      const res = await changePassword({
-        userId: form.account,
-        oldPassword: form.oldPassword,
-        newPassword: form.newPassword,
-      });
+      const res =
+        form.verifyType === 'password'
+          ? await changePassword({
+              userId: form.account,
+              verifyType: 'password',
+              oldPassword: form.oldPassword,
+              newPassword: form.newPassword,
+            })
+          : await changePassword({
+              userId: form.account,
+              verifyType: 'security',
+              securityAnswer: form.securityAnswer,
+              newPassword: form.newPassword,
+            });
 
-      if (res.code === 400) {
+      if (res.code && res.code !== 0 && res.code !== 200) {
         setError(res.message || res.msg || '\u4fee\u6539\u5bc6\u7801\u5931\u8d25');
         return;
       }
@@ -94,13 +170,71 @@ export default function ChangePasswordPage({ navigation }) {
             placeholder={'\u8bf7\u8f93\u5165\u8d26\u53f7'}
             value={form.account}
           />
-          <Field
-            label={'\u65e7\u5bc6\u7801'}
-            onChangeText={(value) => updateForm('oldPassword', value)}
-            placeholder={'\u8bf7\u8f93\u5165\u65e7\u5bc6\u7801'}
-            secureTextEntry
-            value={form.oldPassword}
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>{'\u9a8c\u8bc1\u65b9\u5f0f'}</Text>
+            <View style={styles.verifyTabs}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => updateForm('verifyType', 'password')}
+                style={[
+                  styles.verifyTabButton,
+                  form.verifyType === 'password' && styles.activeVerifyTabButton,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.verifyTabText,
+                    form.verifyType === 'password' && styles.activeVerifyTabText,
+                  ]}
+                >
+                  {'\u5bc6\u7801\u9a8c\u8bc1'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => updateForm('verifyType', 'security')}
+                style={[
+                  styles.verifyTabButton,
+                  form.verifyType === 'security' && styles.activeVerifyTabButton,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.verifyTabText,
+                    form.verifyType === 'security' && styles.activeVerifyTabText,
+                  ]}
+                >
+                  {'\u5bc6\u4fdd\u9a8c\u8bc1'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {form.verifyType === 'password' ? (
+            <Field
+              label={'\u539f\u5bc6\u7801'}
+              onChangeText={(value) => updateForm('oldPassword', value)}
+              placeholder={'\u8bf7\u8f93\u5165\u539f\u5bc6\u7801'}
+              secureTextEntry
+              value={form.oldPassword}
+            />
+          ) : (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{'\u5bc6\u4fdd\u95ee\u9898'}</Text>
+              <View style={styles.securityQuestionBox}>
+                <Text style={styles.securityQuestionText}>
+                  {securityQuestionLoading
+                    ? '\u5bc6\u4fdd\u95ee\u9898\u52a0\u8f7d\u4e2d...'
+                    : securityQuestion || '\u8bf7\u5148\u8f93\u5165\u8d26\u53f7'}
+                </Text>
+              </View>
+              <Field
+                label={'\u5bc6\u4fdd\u7b54\u6848'}
+                onChangeText={(value) => updateForm('securityAnswer', value)}
+                placeholder={'\u8bf7\u8f93\u5165\u5bc6\u4fdd\u7b54\u6848'}
+                value={form.securityAnswer}
+              />
+            </View>
+          )}
           <Field
             label={'\u65b0\u5bc6\u7801'}
             onChangeText={(value) => updateForm('newPassword', value)}
@@ -204,6 +338,48 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     gap: 8,
+  },
+  verifyTabs: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  verifyTabButton: {
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  activeVerifyTabButton: {
+    backgroundColor: '#ea580c',
+    borderColor: '#ea580c',
+  },
+  verifyTabText: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  activeVerifyTabText: {
+    color: '#ffffff',
+  },
+  securityQuestionBox: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#fed7aa',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 46,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  securityQuestionText: {
+    color: '#9a3412',
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   label: {
     color: '#374151',

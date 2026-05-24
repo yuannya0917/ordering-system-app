@@ -10,7 +10,12 @@ import {
   View,
 } from 'react-native';
 
-import { getOrderDetails, getOrderHistory } from '../api/order-history';
+import {
+  formatUserOrderStatusWsError,
+  getOrderDetails,
+  getOrderHistory,
+  subscribeUserOrderStatusChanges,
+} from '../api/order-history';
 import { useAuth } from '../contexts/AuthContext';
 
 const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
@@ -85,6 +90,28 @@ export default function MyOrdersPage({ navigation }) {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    if (!userId) {
+      return undefined;
+    }
+
+    const unsubscribe = subscribeUserOrderStatusChanges({
+      userId,
+      onMessage: () => {
+        loadOrders();
+      },
+      onError: (wsError) => {
+        const wsMessage = formatUserOrderStatusWsError(wsError);
+        if (wsMessage === 'WebSocket 连接已正常关闭') {
+          return;
+        }
+        setError(wsMessage);
+      },
+    });
+
+    return unsubscribe;
+  }, [loadOrders, userId]);
 
   const filteredOrders = useMemo(() => {
     if (activeTab === 'all') {

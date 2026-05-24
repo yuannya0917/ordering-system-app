@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 import AuthLayout from './AuthLayout';
@@ -6,12 +6,10 @@ import copy from './authCopy';
 import styles from './authStyles';
 import Field from './Field';
 
-import { forgotPassword } from '../api/forget-password';
+import { forgotPassword, getSecurityQuestion } from '../api/forget-password';
 
 const initialForm = {
   account: '',
-  verifyType: 'security',
-  oldPassword: '',
   securityAnswer: '',
   newPassword: '',
   confirmPassword: '',
@@ -21,6 +19,8 @@ export default function ForgotPasswordPage({ navigation }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityQuestionLoading, setSecurityQuestionLoading] = useState(false);
 
   const updateForm = (field, value) => {
     setForm((current) => ({
@@ -29,19 +29,60 @@ export default function ForgotPasswordPage({ navigation }) {
     }));
   };
 
+  useEffect(() => {
+    const account = form.account.trim();
+    setSecurityQuestion('');
+    setSecurityQuestionLoading(false);
+
+    if (!account) {
+      return undefined;
+    }
+
+    let ignore = false;
+
+    const loadSecurityQuestion = async () => {
+      try {
+        setSecurityQuestionLoading(true);
+        setError('');
+        const question = await getSecurityQuestion(account);
+        if (!ignore) {
+          setSecurityQuestion(question || '\u6682\u672a\u8bbe\u7f6e\u5bc6\u4fdd\u95ee\u9898');
+        }
+      } catch (requestError) {
+        if (!ignore) {
+          setSecurityQuestion('');
+          setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u5bc6\u4fdd\u95ee\u9898\u5931\u8d25');
+        }
+      } finally {
+        if (!ignore) {
+          setSecurityQuestionLoading(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      loadSecurityQuestion();
+    }, 500);
+
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, [form.account]);
+
   const handleResetPassword = async () => {
     if (!form.account || !form.newPassword || !form.confirmPassword) {
       setError('\u8bf7\u5b8c\u6574\u586b\u5199\u627e\u56de\u5bc6\u7801\u4fe1\u606f');
       return;
     }
 
-    if (form.verifyType === 'password' && !form.oldPassword) {
-      setError('\u8bf7\u8f93\u5165\u539f\u5bc6\u7801');
+    if (!form.securityAnswer) {
+      setError('\u8bf7\u8f93\u5165\u5bc6\u4fdd\u7b54\u6848');
       return;
     }
 
-    if (form.verifyType === 'security' && !form.securityAnswer) {
-      setError('\u8bf7\u8f93\u5165\u5bc6\u4fdd\u7b54\u6848');
+    if (form.newPassword.length < 6) {
+      setError('\u65b0\u5bc6\u7801\u81f3\u5c116\u4f4d');
       return;
     }
 
@@ -54,22 +95,13 @@ export default function ForgotPasswordPage({ navigation }) {
       setLoading(true);
       setError('');
 
-      const res =
-        form.verifyType === 'password'
-          ? await forgotPassword({
-              userId: form.account,
-              verifyType: 'password',
-              oldPassword: form.oldPassword,
-              newPassword: form.newPassword,
-            })
-          : await forgotPassword({
-              userId: form.account,
-              verifyType: 'security',
-              securityAnswer: form.securityAnswer,
-              newPassword: form.newPassword,
-            });
+      const res = await forgotPassword({
+        userId: form.account.trim(),
+        securityAnswer: form.securityAnswer,
+        newPassword: form.newPassword,
+      });
 
-      if (res.code === 400) {
+      if (res.code && res.code !== 0 && res.code !== 200) {
         setError(res.message || res.msg || '\u91cd\u7f6e\u5bc6\u7801\u5931\u8d25');
         return;
       }
@@ -103,74 +135,39 @@ export default function ForgotPasswordPage({ navigation }) {
           value={form.account}
         />
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{'\u627e\u56de\u65b9\u5f0f'}</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => updateForm('verifyType', 'password')}
+          <Text style={styles.label}>{'\u5bc6\u4fdd\u95ee\u9898'}</Text>
+          <View
+            style={{
+              backgroundColor: '#fff7ed',
+              borderColor: '#fed7aa',
+              borderRadius: 8,
+              borderWidth: 1,
+              justifyContent: 'center',
+              minHeight: 46,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+            }}
+          >
+            <Text
               style={{
-                alignItems: 'center',
-                backgroundColor: form.verifyType === 'password' ? '#ea580c' : '#f9fafb',
-                borderColor: form.verifyType === 'password' ? '#ea580c' : '#d1d5db',
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                justifyContent: 'center',
-                minHeight: 44,
+                color: '#9a3412',
+                fontSize: 14,
+                fontWeight: '800',
+                lineHeight: 20,
               }}
             >
-              <Text
-                style={{
-                  color: form.verifyType === 'password' ? '#ffffff' : '#374151',
-                  fontSize: 14,
-                  fontWeight: '700',
-                }}
-              >
-                {'\u5bc6\u7801\u627e\u56de'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => updateForm('verifyType', 'security')}
-              style={{
-                alignItems: 'center',
-                backgroundColor: form.verifyType === 'security' ? '#ea580c' : '#f9fafb',
-                borderColor: form.verifyType === 'security' ? '#ea580c' : '#d1d5db',
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                justifyContent: 'center',
-                minHeight: 44,
-              }}
-            >
-              <Text
-                style={{
-                  color: form.verifyType === 'security' ? '#ffffff' : '#374151',
-                  fontSize: 14,
-                  fontWeight: '700',
-                }}
-              >
-                {'\u5bc6\u4fdd\u627e\u56de'}
-              </Text>
-            </TouchableOpacity>
+              {securityQuestionLoading
+                ? '\u5bc6\u4fdd\u95ee\u9898\u52a0\u8f7d\u4e2d...'
+                : securityQuestion || '\u8bf7\u5148\u8f93\u5165\u8d26\u53f7'}
+            </Text>
           </View>
         </View>
-        {form.verifyType === 'password' ? (
-          <Field
-            label={'\u539f\u5bc6\u7801'}
-            onChangeText={(value) => updateForm('oldPassword', value)}
-            placeholder={'\u8bf7\u8f93\u5165\u539f\u5bc6\u7801'}
-            secureTextEntry
-            value={form.oldPassword}
-          />
-        ) : (
-          <Field
-            label={copy.securityAnswer}
-            onChangeText={(value) => updateForm('securityAnswer', value)}
-            placeholder={copy.answerPlaceholder}
-            value={form.securityAnswer}
-          />
-        )}
+        <Field
+          label={copy.securityAnswer}
+          onChangeText={(value) => updateForm('securityAnswer', value)}
+          placeholder={copy.answerPlaceholder}
+          value={form.securityAnswer}
+        />
         <Field
           label={'\u65b0\u5bc6\u7801'}
           onChangeText={(value) => updateForm('newPassword', value)}

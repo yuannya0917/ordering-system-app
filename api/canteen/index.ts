@@ -1,4 +1,4 @@
-import { api, rawApi, request } from '../request'
+import { API_BASE_URL, api, rawApi, request } from '../request'
 
 export type MenuItem = {
   menuId: string
@@ -157,6 +157,107 @@ export function checkCollect(params: CheckCollectParams) {
   return request<boolean>('/collect/check', {
     method: 'GET',
     params,
+  })
+}
+
+//////////////////////////////////////////////////////////
+
+export type AdminCommentItem = {
+  commentId: string
+  orderId: string
+  userId: string
+  content: string
+  publishTime: string
+}
+
+export type OrderDetailItem = {
+  orderId: string
+  dishId: string
+  dishName: string
+  dishNum: number
+  dishPrice: number
+  totalPrice: number
+}
+
+export type CommentLikeParams = {
+  commentId: string
+  userId: string
+}
+
+export type CommentLikeResult = {
+  success: boolean
+  message?: string
+}
+
+export type CommentLikeCheckResult = {
+  liked: boolean
+}
+
+function getServiceBaseUrl() {
+  return API_BASE_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')
+}
+
+const COMMENT_ADMIN_LIST_URL =
+  process.env.EXPO_PUBLIC_COMMENT_ADMIN_LIST_URL ||
+  `${getServiceBaseUrl()}/comment/admin/list`
+
+function normalizeLikeCount(result: unknown) {
+  if (typeof result === 'number') {
+    return result
+  }
+
+  if (result && typeof result === 'object') {
+    const value = result as {
+      count?: number
+      likeCount?: number
+      likes?: number
+      total?: number
+    }
+
+    return Number(value.count ?? value.likeCount ?? value.likes ?? value.total ?? 0)
+  }
+
+  return 0
+}
+
+export function getAllComments() {
+  return api.get<AdminCommentItem[]>('/comment/admin/list')
+}
+
+export function getOrderDetails(orderId: string) {
+  return api.get<OrderDetailItem[]>(`/orderdetail/list/${orderId}`)
+}
+
+export function addCommentLike(params: CommentLikeParams) {
+  return api.post<CommentLikeResult>('/like/add', undefined, {
+    params: {
+      commentid: params.commentId,
+      userid: params.userId,
+    },
+  })
+}
+
+export async function getCommentLikeCount(commentId: string) {
+  const result = await request<unknown>(`/like/count/${commentId}`)
+  return normalizeLikeCount(result)
+}
+
+export function checkCommentLiked(params: CommentLikeParams) {
+  return api.get<CommentLikeCheckResult>('/like/check', {
+    params: {
+      commentid: params.commentId,
+      userid: params.userId,
+    },
+  })
+}
+
+export function cancelCommentLike(params: CommentLikeParams) {
+  return request<CommentLikeResult>('/like/cancel', {
+    method: 'DELETE',
+    params: {
+      commentid: params.commentId,
+      userid: params.userId,
+    },
   })
 }
 

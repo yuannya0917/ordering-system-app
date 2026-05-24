@@ -41,6 +41,14 @@ export default function UserCenterPage({ navigation }) {
     loadUserInfo();
   }, [loadUserInfo]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadUserInfo();
+    });
+
+    return unsubscribe;
+  }, [loadUserInfo, navigation]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.topBar}>
@@ -83,6 +91,14 @@ export default function UserCenterPage({ navigation }) {
                 onPress={() => navigation.navigate('Revenue')}
               />
               <ActionButton
+                label={'\u67e5\u770b\u8bc4\u8bba'}
+                onPress={() => navigation.navigate('MyReviews', { showAllReviews: true })}
+              />
+              <ActionButton
+                label={'\u4fee\u6539\u4e2a\u4eba\u4fe1\u606f'}
+                onPress={() => navigation.navigate('EditProfile')}
+              />
+              <ActionButton
                 label={'\u4fee\u6539\u5bc6\u7801'}
                 onPress={() => navigation.navigate('ChangePassword')}
               />
@@ -101,6 +117,10 @@ export default function UserCenterPage({ navigation }) {
               <ActionButton
                 label={'\u6211\u7684\u8bc4\u8bba'}
                 onPress={() => navigation.navigate('MyReviews')}
+              />
+              <ActionButton
+                label={'\u4fee\u6539\u4e2a\u4eba\u4fe1\u606f'}
+                onPress={() => navigation.navigate('EditProfile')}
               />
               <ActionButton
                 label={'\u4fee\u6539\u5bc6\u7801'}

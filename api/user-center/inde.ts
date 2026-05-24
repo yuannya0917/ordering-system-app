@@ -19,6 +19,15 @@ export type UserInfo = {
   orderIds: string[]
 }
 
+export type UpdateUserInfoParams = {
+  userId: string
+  username: string
+}
+
 export function getUserInfo(params: GetUserInfoParams) {
   return rawApi.get<UserInfo>('/auth/info', { params })
+}
+
+export function updateUserInfo(params: UpdateUserInfoParams) {
+  return rawApi.put<null>('/auth/update', params)
 }

@@ -10,20 +10,22 @@ import {
   View,
 } from 'react-native';
 
-import { getMyReviews } from '../api/my-review';
+import { deleteComment, getAllComments, getMyReviews } from '../api/my-review';
 import { useAuth } from '../contexts/AuthContext';
 
 const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
 const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 
-export default function MyReviewsPage({ navigation }) {
+export default function MyReviewsPage({ navigation, route }) {
   const { userId } = useAuth();
+  const showAllReviews = Boolean(route?.params?.showAllReviews);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState('');
   const [error, setError] = useState('');
 
   const loadReviews = useCallback(async () => {
-    if (!userId) {
+    if (!showAllReviews && !userId) {
       setError('\u5f53\u524d\u7528\u6237\u4fe1\u606f\u4e0d\u5b8c\u6574');
       return;
     }
@@ -31,25 +33,71 @@ export default function MyReviewsPage({ navigation }) {
     try {
       setLoading(true);
       setError('');
-      const result = await getMyReviews(userId);
+      const result = showAllReviews ? await getAllComments() : await getMyReviews(userId);
       setReviews(result);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u6211\u7684\u8bc4\u8bba\u5931\u8d25');
+      setError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u8bc4\u8bba\u5931\u8d25');
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [showAllReviews, userId]);
 
   useEffect(() => {
     loadReviews();
   }, [loadReviews]);
 
+  const deleteReview = async (commentId, commentUserId) => {
+    const targetUserId = commentUserId || userId;
+
+    if (!targetUserId) {
+      setError('\u5f53\u524d\u7528\u6237\u4fe1\u606f\u4e0d\u5b8c\u6574');
+      return;
+    }
+
+    try {
+      setDeletingCommentId(commentId);
+      setError('');
+      const result = await deleteComment({ commentId, userId: targetUserId });
+
+      if (result && result.success === false) {
+        setError(result.message || '\u5220\u9664\u8bc4\u8bba\u5931\u8d25');
+        return;
+      }
+
+      setReviews((current) => current.filter((review) => review.commentId !== commentId));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '\u5220\u9664\u8bc4\u8bba\u5931\u8d25');
+    } finally {
+      setDeletingCommentId('');
+    }
+  };
+
+  const handleDeleteReview = (commentId, commentUserId) => {
+    deleteReview(commentId, commentUserId);
+  };
+
   const renderReview = ({ item }) => (
     <View style={styles.reviewCard}>
       <View style={styles.reviewHeader}>
         <Text style={styles.dishName}>{item.orderId}</Text>
-        <Text style={styles.rating}>{item.commentId}</Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={deletingCommentId === item.commentId}
+          onPress={() => handleDeleteReview(item.commentId, item.userId)}
+          style={[
+            styles.deleteButton,
+            deletingCommentId === item.commentId && styles.disabledButton,
+          ]}
+        >
+          <Text style={styles.deleteButtonText}>
+            {deletingCommentId === item.commentId ? '\u5220\u9664\u4e2d...' : '\u5220\u9664'}
+          </Text>
+        </TouchableOpacity>
       </View>
+      <Text style={styles.commentId}>{item.commentId}</Text>
+      {showAllReviews ? (
+        <Text style={styles.reviewUser}>{'\u7528\u6237\uff1a'}{item.userId}</Text>
+      ) : null}
       <Text style={styles.reviewDate}>{item.publishTime}</Text>
       <Text style={styles.reviewContent}>{item.content}</Text>
     </View>
@@ -65,7 +113,9 @@ export default function MyReviewsPage({ navigation }) {
         >
           <Text style={styles.topBarButtonText}>{'\u8fd4\u56de'}</Text>
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>{'\u6211\u7684\u8bc4\u8bba'}</Text>
+        <Text style={styles.topBarTitle}>
+          {showAllReviews ? '\u6240\u6709\u8bc4\u8bba' : '\u6211\u7684\u8bc4\u8bba'}
+        </Text>
         <View style={styles.topBarButton} />
       </View>
 
@@ -157,10 +207,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
   },
-  rating: {
+  commentId: {
     color: '#dc2626',
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 8,
   },
   reviewDate: {
     color: '#6b7280',
@@ -168,9 +219,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 10,
   },
+  reviewUser: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
   reviewContent: {
     color: '#374151',
     fontSize: 14,
     lineHeight: 20,
+  },
+  deleteButton: {
+    alignItems: 'center',
+    backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 34,
+    minWidth: 70,
+    paddingHorizontal: 12,
+  },
+  deleteButtonText: {
+    color: '#dc2626',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  disabledButton: {
+    opacity: 0.65,
   },
 });

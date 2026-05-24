@@ -18,14 +18,20 @@ import * as DocumentPicker from 'expo-document-picker';
 
 import {
   addCollect,
+  addCommentLike,
   addDish,
   addMenu,
+  cancelCommentLike,
+  checkCommentLiked,
   deleteCollect,
   deleteDish,
   deleteMenu,
+  getAllComments,
+  getCommentLikeCount,
   getCollectList,
   getDishList,
   getMenuList,
+  getOrderDetails,
   updateDish,
   updateMenu,
 } from '../api/canteen';
@@ -62,8 +68,27 @@ const favoriteMenu = {
   name: '\u6536\u85cf',
 };
 
+const pageTabs = [
+  {
+    id: 'order',
+    label: '\u70b9\u9910',
+  },
+  {
+    id: 'reviews',
+    label: '\u8bc4\u8bba',
+  },
+];
+
 const pickFirstNonEmpty = (...values) =>
   values.find((value) => value !== undefined && value !== null && String(value).trim() !== '');
+
+const formatPublishTime = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  return String(value).replace('T', ' ').slice(0, 16);
+};
 
 export default function CanteenPage({
   cartCount,
@@ -86,6 +111,13 @@ export default function CanteenPage({
   const [favoriteLoadingIds, setFavoriteLoadingIds] = useState([]);
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activePageTab, setActivePageTab] = useState('order');
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewLikeCounts, setReviewLikeCounts] = useState({});
+  const [likedCommentIds, setLikedCommentIds] = useState([]);
+  const [likeLoadingIds, setLikeLoadingIds] = useState([]);
   const [menuForm, setMenuForm] = useState({
     menuId: '',
     menuName: '',
@@ -195,9 +227,84 @@ export default function CanteenPage({
     }
   }, [loadCartSummary, loadDishes, loadFavorites, loadMenus]);
 
+  const loadReviews = useCallback(async () => {
+    try {
+      setReviewsLoading(true);
+      setReviewError('');
+
+      const commentList = await getAllComments();
+      const normalizedCommentList = Array.isArray(commentList) ? commentList : [];
+      const orderIds = Array.from(
+        new Set(normalizedCommentList.map((comment) => comment.orderId).filter(Boolean))
+      );
+
+      const detailEntries = await Promise.all(
+        orderIds.map(async (orderId) => {
+          try {
+            const details = await getOrderDetails(orderId);
+            const dishNames = Array.from(
+              new Set(
+                (Array.isArray(details) ? details : [])
+                  .map((detail) => detail.dishName)
+                  .filter(Boolean)
+              )
+            );
+
+            return [orderId, dishNames.length ? dishNames.join('\u3001') : '\u672a\u77e5\u83dc\u54c1'];
+          } catch {
+            return [orderId, '\u672a\u77e5\u83dc\u54c1'];
+          }
+        })
+      );
+      const dishNameByOrderId = Object.fromEntries(detailEntries);
+
+      const likeEntries = await Promise.all(
+        normalizedCommentList.map(async (comment) => {
+          const commentId = comment.commentId;
+          const [count, likedResult] = await Promise.all([
+            getCommentLikeCount(commentId).catch(() => 0),
+            userId
+              ? checkCommentLiked({ commentId, userId }).catch(() => ({ liked: false }))
+              : Promise.resolve({ liked: false }),
+          ]);
+
+          return [commentId, { count, liked: Boolean(likedResult?.liked) }];
+        })
+      );
+      const likeStateByCommentId = Object.fromEntries(likeEntries);
+
+      setReviews(
+        normalizedCommentList.map((comment) => ({
+          ...comment,
+          dishName: dishNameByOrderId[comment.orderId] || '\u672a\u77e5\u83dc\u54c1',
+        }))
+      );
+      setReviewLikeCounts(
+        Object.fromEntries(
+          likeEntries.map(([commentId, state]) => [commentId, Number(state.count || 0)])
+        )
+      );
+      setLikedCommentIds(
+        Object.entries(likeStateByCommentId)
+          .filter(([, state]) => state.liked)
+          .map(([commentId]) => commentId)
+      );
+    } catch (requestError) {
+      setReviewError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u8bc4\u8bba\u5931\u8d25');
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [userId]);
+
   useEffect(() => {
     loadCanteenData();
   }, [loadCanteenData]);
+
+  useEffect(() => {
+    if (activePageTab === 'reviews') {
+      loadReviews();
+    }
+  }, [activePageTab, loadReviews]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -363,6 +470,47 @@ export default function CanteenPage({
       setEditError(requestError instanceof Error ? requestError.message : '\u52a0\u5165\u8d2d\u7269\u8f66\u5931\u8d25');
     } finally {
       setCartLoadingIds((current) => current.filter((id) => id !== dish.id));
+    }
+  };
+
+  const handleToggleLike = async (commentId) => {
+    if (!userId) {
+      setReviewError('\u8bf7\u5148\u767b\u5f55\u518d\u70b9\u8d5e');
+      return;
+    }
+
+    const isLiked = likedCommentIds.includes(commentId);
+    setLikeLoadingIds((current) => [...current, commentId]);
+    setReviewError('');
+
+    try {
+      if (isLiked) {
+        await cancelCommentLike({ commentId, userId });
+      } else {
+        await addCommentLike({ commentId, userId });
+      }
+
+      setLikedCommentIds((current) => {
+        if (isLiked) {
+          return current.filter((id) => id !== commentId);
+        }
+
+        return current.includes(commentId) ? current : [...current, commentId];
+      });
+      setReviewLikeCounts((current) => ({
+        ...current,
+        [commentId]: Math.max(0, Number(current[commentId] || 0) + (isLiked ? -1 : 1)),
+      }));
+    } catch (requestError) {
+      setReviewError(
+        requestError instanceof Error
+          ? requestError.message
+          : isLiked
+            ? '\u53d6\u6d88\u70b9\u8d5e\u5931\u8d25'
+            : '\u70b9\u8d5e\u5931\u8d25'
+      );
+    } finally {
+      setLikeLoadingIds((current) => current.filter((id) => id !== commentId));
     }
   };
 
@@ -584,7 +732,6 @@ export default function CanteenPage({
       <View style={styles.dishHeader}>
         <TouchableOpacity
           activeOpacity={0.75}
-          onPress={() => navigation.navigate('DishReviews', { dish: item })}
           style={styles.dishInfoButton}
         >
           <Text style={styles.dishName}>{item.name}</Text>
@@ -612,7 +759,7 @@ export default function CanteenPage({
                 {favoriteLoadingIds.includes(item.id)
                   ? '\u5904\u7406\u4e2d'
                   : favoriteIds.includes(item.id)
-                    ? '\u5df2\u85cf'
+                    ? '\u5df2\u6536\u85cf'
                     : '\u6536\u85cf'}
               </Text>
             </TouchableOpacity>
@@ -646,6 +793,44 @@ export default function CanteenPage({
     </View>
   );
 
+  const renderReview = ({ item }) => (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewHeader}>
+        <View style={styles.reviewTitleGroup}>
+          <Text style={styles.reviewDishName}>{item.dishName}</Text>
+          <Text style={styles.reviewMeta}>
+            {'订单 '}{item.orderId}{' / 用户 '}{item.userId}{' / '}{formatPublishTime(item.publishTime)}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.reviewContent}>{item.content}</Text>
+      <View style={styles.reviewFooter}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={likeLoadingIds.includes(item.commentId)}
+          onPress={() => handleToggleLike(item.commentId)}
+          style={[
+            styles.likeButton,
+            likedCommentIds.includes(item.commentId) && styles.activeLikeButton,
+            likeLoadingIds.includes(item.commentId) && styles.disabledActionButton,
+          ]}
+        >
+          <Text
+            style={[
+              styles.likeButtonText,
+              likedCommentIds.includes(item.commentId) && styles.activeLikeButtonText,
+            ]}
+          >
+            {likedCommentIds.includes(item.commentId) ? '❤ \u5df2\u70b9\u8d5e' : '❤ \u70b9\u8d5e'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.likeCount}>
+          {Number(reviewLikeCounts[item.commentId] || 0)}{'\u4eba\u70b9\u8d5e'}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.topBar}>
@@ -669,81 +854,126 @@ export default function CanteenPage({
       </View>
 
       <View style={styles.searchArea}>
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={setKeyword}
-          placeholder={'\u641c\u7d22\u83dc\u54c1'}
-          placeholderTextColor="#9ca3af"
-          style={styles.searchInput}
-          value={keyword}
+        <View style={styles.pageTabs}>
+          {pageTabs.map((tab) => {
+            const isActive = tab.id === activePageTab;
+
+            return (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                key={tab.id}
+                onPress={() => setActivePageTab(tab.id)}
+                style={[styles.pageTabButton, isActive && styles.activePageTabButton]}
+              >
+                <Text style={[styles.pageTabText, isActive && styles.activePageTabText]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {activePageTab === 'order' ? (
+          <TextInput
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setKeyword}
+            placeholder={'\u641c\u7d22\u83dc\u54c1'}
+            placeholderTextColor="#9ca3af"
+            style={styles.searchInput}
+            value={keyword}
+          />
+        ) : null}
+        {!modalVisible && activePageTab === 'order' && editError ? (
+          <Text style={styles.pageError}>{editError}</Text>
+        ) : null}
+        {activePageTab === 'reviews' && reviewError ? (
+          <Text style={styles.pageError}>{reviewError}</Text>
+        ) : null}
+      </View>
+
+      {activePageTab === 'order' ? (
+        <View style={styles.mainArea}>
+          <View style={styles.menuColumn}>
+            <FlatList
+              contentContainerStyle={styles.menuList}
+              data={menuItems}
+              keyExtractor={(item) => item.id || item.menuId}
+              ListFooterComponent={
+                isAdmin ? (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => openMenuEditor('add')}
+                    style={styles.menuAddButton}
+                  >
+                    <Text style={styles.menuAddText}>+</Text>
+                  </TouchableOpacity>
+                ) : null
+              }
+              renderItem={renderMenu}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+
+          <View style={styles.dishColumn}>
+            <FlatList
+              contentContainerStyle={styles.dishList}
+              data={dishes}
+              keyExtractor={(item) => item.id}
+              ListFooterComponent={
+                isAdmin && activeMenuId ? (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => openDishEditor('add')}
+                    style={styles.dishAddButton}
+                  >
+                    <Text style={styles.dishAddText}>{'\u6dfb\u52a0\u83dc\u54c1'}</Text>
+                  </TouchableOpacity>
+                ) : null
+              }
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  {!isAdmin && activeMenuId === favoriteMenu.id
+                    ? '\u6682\u65e0\u6536\u85cf\u83dc\u54c1'
+                    : '\u5f53\u524d\u83dc\u5355\u672a\u627e\u5230\u76f8\u5173\u83dc\u54c1'}
+                </Text>
+              }
+              renderItem={renderDish}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      ) : (
+        <FlatList
+          contentContainerStyle={styles.reviewList}
+          data={reviews}
+          keyExtractor={(item) => item.commentId}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              {reviewsLoading ? '\u8bc4\u8bba\u52a0\u8f7d\u4e2d...' : '\u6682\u65e0\u8bc4\u8bba'}
+            </Text>
+          }
+          onRefresh={loadReviews}
+          renderItem={renderReview}
+          refreshing={reviewsLoading}
+          showsVerticalScrollIndicator={false}
+          style={styles.reviewPage}
         />
-        {!modalVisible && editError ? <Text style={styles.pageError}>{editError}</Text> : null}
-      </View>
+      )}
 
-      <View style={styles.mainArea}>
-        <View style={styles.menuColumn}>
-          <FlatList
-            contentContainerStyle={styles.menuList}
-            data={menuItems}
-            keyExtractor={(item) => item.id || item.menuId}
-            ListFooterComponent={
-              isAdmin ? (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => openMenuEditor('add')}
-                  style={styles.menuAddButton}
-                >
-                  <Text style={styles.menuAddText}>+</Text>
-                </TouchableOpacity>
-              ) : null
-            }
-            renderItem={renderMenu}
-            showsVerticalScrollIndicator={false}
-          />
+      {activePageTab === 'order' ? (
+        <View style={styles.cartBar}>
+          <View>
+            <Text style={styles.cartTotal}>{'\u00a5'}{displayCartTotal}</Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Cart')}
+            style={styles.cartButton}
+          >
+            <Text style={styles.cartButtonText}>{'\u8d2d\u7269\u8f66'}</Text>
+          </TouchableOpacity>
         </View>
-
-        <View style={styles.dishColumn}>
-          <FlatList
-            contentContainerStyle={styles.dishList}
-            data={dishes}
-            keyExtractor={(item) => item.id}
-            ListFooterComponent={
-              isAdmin && activeMenuId ? (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => openDishEditor('add')}
-                  style={styles.dishAddButton}
-                >
-                  <Text style={styles.dishAddText}>{'\u6dfb\u52a0\u83dc\u54c1'}</Text>
-                </TouchableOpacity>
-              ) : null
-            }
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>
-                {!isAdmin && activeMenuId === favoriteMenu.id
-                  ? '\u6682\u65e0\u6536\u85cf\u83dc\u54c1'
-                  : '\u5f53\u524d\u83dc\u5355\u672a\u627e\u5230\u76f8\u5173\u83dc\u54c1'}
-              </Text>
-            }
-            renderItem={renderDish}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
-      </View>
-
-      <View style={styles.cartBar}>
-        <View>
-          <Text style={styles.cartTotal}>{'\u00a5'}{displayCartTotal}</Text>
-        </View>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('Cart')}
-          style={styles.cartButton}
-        >
-          <Text style={styles.cartButtonText}>{'\u8d2d\u7269\u8f66'}</Text>
-        </TouchableOpacity>
-      </View>
+      ) : null}
 
       <Modal
         animationType="fade"
@@ -962,6 +1192,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  pageTabs: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    flexDirection: 'row',
+    marginBottom: 12,
+    padding: 4,
+  },
+  pageTabButton: {
+    alignItems: 'center',
+    borderRadius: 6,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 40,
+  },
+  activePageTabButton: {
+    backgroundColor: '#ea580c',
+  },
+  pageTabText: {
+    color: '#4b5563',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  activePageTabText: {
+    color: '#ffffff',
   },
   searchInput: {
     backgroundColor: '#f9fafb',
@@ -1205,6 +1460,82 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingTop: 32,
     textAlign: 'center',
+  },
+  reviewPage: {
+    flex: 1,
+  },
+  reviewList: {
+    gap: 12,
+    padding: 16,
+    paddingBottom: 24 + BOTTOM_SAFE_PADDING,
+  },
+  reviewCard: {
+    backgroundColor: '#ffffff',
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 15,
+  },
+  reviewHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  reviewTitleGroup: {
+    flex: 1,
+  },
+  reviewDishName: {
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  reviewMeta: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  reviewContent: {
+    color: '#374151',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  reviewFooter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  likeButton: {
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 34,
+    minWidth: 76,
+    paddingHorizontal: 12,
+  },
+  activeLikeButton: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#fb923c',
+  },
+  likeButtonText: {
+    color: '#4b5563',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  activeLikeButtonText: {
+    color: '#c2410c',
+  },
+  likeCount: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '700',
   },
   modalBackdrop: {
     alignItems: 'center',
