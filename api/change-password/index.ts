@@ -1,7 +1,5 @@
 import { rawApi } from '../request'
 
-export type VerifyType = 'password' | 'security'
-
 export type ChangePasswordByPasswordParams = {
   userId: string
   verifyType: 'password'
@@ -9,7 +7,7 @@ export type ChangePasswordByPasswordParams = {
   newPassword: string
 }
 
-export type ChangePasswordBySecurityAnswerParams = {
+export type ChangePasswordBySecurityParams = {
   userId: string
   verifyType: 'security'
   securityAnswer: string
@@ -17,7 +15,7 @@ export type ChangePasswordBySecurityAnswerParams = {
 }
 
 export function changePassword(
-  params: ChangePasswordByPasswordParams | ChangePasswordBySecurityAnswerParams,
+  params: ChangePasswordByPasswordParams | ChangePasswordBySecurityParams,
 ) {
   return rawApi.put('/auth/updatePassword', params)
 }

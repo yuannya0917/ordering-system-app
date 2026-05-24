@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
+  Platform,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +13,8 @@ import {
 
 import { getAllOrders, getTotalAmount } from '../api/revenue';
 
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 const dateTimePattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
 export default function RevenuePage({ navigation }) {
@@ -197,7 +201,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {

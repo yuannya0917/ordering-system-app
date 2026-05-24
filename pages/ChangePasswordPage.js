@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import {
+  Platform,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +13,8 @@ import {
 import { changePassword } from '../api/change-password';
 import { useAuth } from '../contexts/AuthContext';
 
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 const initialForm = {
   account: '',
   oldPassword: '',
@@ -51,7 +55,6 @@ export default function ChangePasswordPage({ navigation }) {
 
       const res = await changePassword({
         userId: form.account,
-        verifyType: 'password',
         oldPassword: form.oldPassword,
         newPassword: form.newPassword,
       });
@@ -164,7 +167,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {

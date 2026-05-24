@@ -1,4 +1,7 @@
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 
 export default function RoleSelectPage({ navigation, onSelectUsertype }) {
   const enterApp = (selectedUsertype) => {
@@ -56,7 +59,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {

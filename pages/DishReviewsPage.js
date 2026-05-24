@@ -1,37 +1,17 @@
-import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  FlatList,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-const reviewMap = {
-  'hot-1': [
-    {
-      id: 'hot-1-r1',
-      user: '\u5f20\u4e09',
-      rating: 5,
-      content: '\u9e21\u8089\u5f88\u5165\u5473\uff0c\u7c73\u996d\u4efd\u91cf\u4e5f\u591f\u3002',
-    },
-    {
-      id: 'hot-1-r2',
-      user: '\u674e\u56db',
-      rating: 4,
-      content: '\u5473\u9053\u4e0d\u9519\uff0c\u4e0b\u6b21\u60f3\u52a0\u70b9\u8fa3\u3002',
-    },
-  ],
-  'hot-2': [
-    {
-      id: 'hot-2-r1',
-      user: '\u738b\u4e94',
-      rating: 5,
-      content: '\u725b\u8169\u8f6f\u70c2\uff0c\u6c64\u5e95\u5f88\u9999\u3002',
-    },
-  ],
-  'noodle-1': [
-    {
-      id: 'noodle-1-r1',
-      user: '\u8d75\u516d',
-      rating: 4,
-      content: '\u5c0f\u9762\u8fa3\u5ea6\u521a\u597d\uff0c\u51fa\u9910\u4e5f\u5feb\u3002',
-    },
-  ],
-};
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
+
 
 export default function DishReviewsPage({ navigation, route }) {
   const dish = route.params?.dish;
@@ -90,7 +70,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {

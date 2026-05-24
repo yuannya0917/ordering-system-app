@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  FlatList,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { getOrderDetails, getOrderHistory } from '../api/order-history';
 import { useAuth } from '../contexts/AuthContext';
 
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 const tabs = [
   {
     id: 'all',
@@ -112,7 +123,7 @@ export default function MyOrdersPage({ navigation }) {
         ) : null}
         <View style={styles.orderFooter}>
           <Text style={styles.total}>{'\u5408\u8ba1\uff1a\u00a5'}{item.orderPrice}</Text>
-          {statusKey === 'completed' && (
+          {statusKey === 'completed' ? (
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => navigation.navigate('OrderReview', { order: item, details })}
@@ -120,7 +131,7 @@ export default function MyOrdersPage({ navigation }) {
             >
               <Text style={styles.reviewButtonText}>{'\u8bc4\u4ef7'}</Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
       </View>
     );
@@ -188,7 +199,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {

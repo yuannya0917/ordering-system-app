@@ -1,0 +1,72 @@
+import { API_BASE_URL, api } from '../request'
+
+type ApiResponse<T> = {
+  code?: number
+  message?: string
+  msg?: string
+  data?: T
+}
+
+export type UploadDishImageParams = {
+  dishId: string
+  dishName: string
+  file: File | { uri: string; name: string; type: string }
+}
+
+export type DishImage = {
+  id: number
+  dish_id: string
+  dish_name: string
+  image_url: string
+  create_time: string
+  update_time: string
+}
+
+function buildApiUrl(path: string) {
+  if (path.startsWith('http')) {
+    return path
+  }
+
+  return `${API_BASE_URL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+}
+
+function unwrapResponse<T>(result: ApiResponse<T> | T) {
+  if (
+    typeof result === 'object' &&
+    result !== null &&
+    'code' in result &&
+    result.code !== 0 &&
+    result.code !== 200
+  ) {
+    throw new Error(result.message || result.msg || 'Request failed')
+  }
+
+  if (typeof result === 'object' && result !== null && 'data' in result) {
+    return result.data as T
+  }
+
+  return result as T
+}
+
+export async function uploadDishImage(params: UploadDishImageParams) {
+  const formData = new FormData()
+  formData.append('dishId', params.dishId)
+  formData.append('dishName', params.dishName)
+  formData.append('file', params.file as never)
+
+  const response = await fetch(buildApiUrl('/dish-image/upload'), {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`)
+  }
+
+  const result = (await response.json()) as ApiResponse<string>
+  return unwrapResponse(result)
+}
+
+export function getDishImage(dishId: string) {
+  return api.get<DishImage>(`/dish-image/${dishId}`)
+}

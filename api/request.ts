@@ -1,11 +1,10 @@
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
-  'http://10.100.147.122:8081'
+  'http://10.100.48.139:8081'
 
 export const WS_URL =
   process.env.EXPO_PUBLIC_WS_URL ||
-  'ws://10.100.147.122:8081/ws'
-
+  'ws://10.100.48.139:8081/ws'
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -23,8 +22,11 @@ type RequestOptions = Omit<RequestInit, 'body' | 'method'> & {
 }
 
 function buildUrl(path: string, params?: RequestOptions['params']) {
-  const requestPath = path.startsWith('http') ? path : `${API_BASE_URL}${path}`
-  const url = new URL(requestPath, window.location.origin)
+  const requestPath = path.startsWith('http')
+    ? path
+    : `${API_BASE_URL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+
+  const url = new URL(requestPath)
 
   Object.entries(params ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -49,7 +51,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   })
 
   if (!response.ok) {
-    throw new Error(`ËØ∑Ê±ÇÂ§±Ë¥•Ôºö${response.status}`)
+    throw new Error(`«Î«Û ß∞‹: ${response.status}`)
   }
 
   const result = (await response.json()) as ApiResponse<T> | T
@@ -61,7 +63,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     result.code !== 0 &&
     result.code !== 200
   ) {
-    throw new Error(result.message || result.msg || 'ËØ∑Ê±ÇÂ§±Ë¥•')
+    throw new Error(result.message || result.msg || '«Î«Û ß∞‹')
   }
 
   if (typeof result === 'object' && result !== null && 'data' in result) {
@@ -88,7 +90,7 @@ export async function requestRaw<T>(
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ËØ∑Ê±ÇÂ§±Ë¥•Ôºö${response.status}`)
+    throw new Error(`HTTP «Î«Û ß∞‹: ${response.status}`)
   }
 
   const result = (await response.json()) as ApiResponse<T>

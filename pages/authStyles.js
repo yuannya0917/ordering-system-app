@@ -1,4 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StatusBar, StyleSheet } from 'react-native';
+
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -8,7 +11,8 @@ const styles = StyleSheet.create({
   authTopBar: {
     alignItems: 'center',
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   authTopBarButton: {

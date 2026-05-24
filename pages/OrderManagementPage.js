@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  FlatList,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import {
+  formatWsError,
   getAllOrders,
   getOrderDetails,
   subscribeMerchantNewOrders,
   updateOrderStatus as updateOrderStatusApi,
 } from '../api/order-management';
 
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
 const tabs = [
   {
     id: 'all',
@@ -91,8 +103,12 @@ export default function OrderManagementPage({ navigation }) {
       onMessage: () => {
         loadOrders();
       },
-      onError: () => {
-        setError('\u8ba2\u5355\u5b9e\u65f6\u901a\u77e5\u8fde\u63a5\u5f02\u5e38');
+      onError: (wsError) => {
+        const wsMessage = formatWsError(wsError);
+        if (wsMessage === 'WebSocket 连接已正常关闭') {
+          return;
+        }
+        setError(wsMessage);
       },
     });
 
@@ -242,7 +258,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {

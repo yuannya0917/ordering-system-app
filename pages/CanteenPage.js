@@ -1,142 +1,69 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Dimensions,
   FlatList,
+  Image,
   Modal,
+  Platform,
   SafeAreaView,
+  ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 
-const menus = [
-  {
-    id: 'hot',
-    name: '\u70ed\u9500',
-    dishes: [
-      {
-        id: 'hot-1',
-        name: '\u9ec4\u7116\u9e21\u7c73\u996d',
-        price: '16',
-        desc: '\u9e21\u8089\u9c9c\u5ae9\uff0c\u914d\u9752\u6912\u9999\u83c7',
-      },
-      {
-        id: 'hot-2',
-        name: '\u756a\u8304\u725b\u8169\u9762',
-        price: '18',
-        desc: '\u6c64\u5e95\u6d53\u90c1\uff0c\u725b\u8089\u8f6f\u70c2',
-      },
-      {
-        id: 'hot-3',
-        name: '\u9c7c\u9999\u8089\u4e1d\u5957\u9910',
-        price: '14',
-        desc: '\u9178\u751c\u5f00\u80c3\uff0c\u914d\u7c73\u996d\u548c\u65f6\u852c',
-      },
-    ],
-  },
-  {
-    id: 'rice',
-    name: '\u7c73\u996d\u5957\u9910',
-    dishes: [
-      {
-        id: 'rice-1',
-        name: '\u9ed1\u6912\u725b\u67f3\u996d',
-        price: '17',
-        desc: '\u9ed1\u6912\u9999\u6c14\u8db3\uff0c\u725b\u67f3\u5165\u5473',
-      },
-      {
-        id: 'rice-2',
-        name: '\u571f\u8c46\u70e7\u9e21\u996d',
-        price: '15',
-        desc: '\u571f\u8c46\u7ef5\u8f6f\uff0c\u6c64\u6c41\u4e0b\u996d',
-      },
-      {
-        id: 'rice-3',
-        name: '\u849c\u9999\u6392\u9aa8\u996d',
-        price: '19',
-        desc: '\u6392\u9aa8\u5916\u9999\u91cc\u5ae9\uff0c\u5206\u91cf\u624e\u5b9e',
-      },
-    ],
-  },
-  {
-    id: 'noodle',
-    name: '\u7c89\u9762',
-    dishes: [
-      {
-        id: 'noodle-1',
-        name: '\u91cd\u5e86\u5c0f\u9762',
-        price: '11',
-        desc: '\u9ebb\u8fa3\u9c9c\u9999\uff0c\u53ef\u9009\u8fa3\u5ea6',
-      },
-      {
-        id: 'noodle-2',
-        name: '\u725b\u8089\u6cb3\u7c89',
-        price: '16',
-        desc: '\u6cb3\u7c89\u723d\u6ed1\uff0c\u725b\u8089\u91cf\u8db3',
-      },
-      {
-        id: 'noodle-3',
-        name: '\u9999\u83c7\u9e21\u6c64\u9762',
-        price: '13',
-        desc: '\u6e05\u723d\u6c64\u5e95\uff0c\u9002\u5408\u6e05\u6de1\u53e3',
-      },
-    ],
-  },
-  {
-    id: 'snack',
-    name: '\u5c0f\u5403',
-    dishes: [
-      {
-        id: 'snack-1',
-        name: '\u9e21\u86cb\u704c\u997c',
-        price: '8',
-        desc: '\u73b0\u70e4\u9999\u8106\uff0c\u914d\u9171\u9999\u6d53',
-      },
-      {
-        id: 'snack-2',
-        name: '\u70e4\u51b7\u9762',
-        price: '9',
-        desc: '\u9178\u751c\u5fae\u8fa3\uff0c\u52a0\u86cb\u66f4\u9999',
-      },
-      {
-        id: 'snack-3',
-        name: '\u84b8\u997a',
-        price: '10',
-        desc: '\u76ae\u8584\u9985\u591a\uff0c\u4e00\u7b3c\u5341\u4e2a',
-      },
-    ],
-  },
-  {
-    id: 'drink',
-    name: '\u996e\u54c1',
-    dishes: [
-      {
-        id: 'drink-1',
-        name: '\u67e0\u6aac\u8336',
-        price: '7',
-        desc: '\u9178\u751c\u6e05\u723d\uff0c\u51b0\u70ed\u53ef\u9009',
-      },
-      {
-        id: 'drink-2',
-        name: '\u7eff\u8c46\u6c99',
-        price: '6',
-        desc: '\u6e05\u51c9\u89e3\u817b\uff0c\u5348\u9910\u642d\u914d',
-      },
-      {
-        id: 'drink-3',
-        name: '\u539f\u5473\u8c46\u6d46',
-        price: '4',
-        desc: '\u73b0\u78e8\u8c46\u6d46\uff0c\u53e3\u611f\u9187\u539a',
-      },
-    ],
-  },
-];
+import {
+  addCollect,
+  addDish,
+  addMenu,
+  deleteCollect,
+  deleteDish,
+  deleteMenu,
+  getCollectList,
+  getDishList,
+  getMenuList,
+  updateDish,
+  updateMenu,
+} from '../api/canteen';
+import { addCart, getCart } from '../api/cart';
+import { getDishImage, uploadDishImage } from '../api/pic';
+import { useAuth } from '../contexts/AuthContext';
+
+const TOP_BAR_PADDING_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : 0;
+const TOP_BAR_MIN_HEIGHT = 58 + TOP_BAR_PADDING_TOP;
+const WINDOW_HEIGHT = Dimensions.get('window').height;
+const SCREEN_HEIGHT = Dimensions.get('screen').height;
+const BOTTOM_SAFE_PADDING = Platform.OS === 'android'
+  ? Math.max(0, SCREEN_HEIGHT - WINDOW_HEIGHT - (StatusBar.currentHeight || 0))
+  : 0;
+
+const buildImageUrl = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  if (String(value).startsWith('http')) {
+    return value;
+  }
+
+  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.100.48.139:8081';
+  const assetBaseUrl = baseUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
+  const normalizedPath = String(value).replace(/^\/+/, '').replace(/^api\/+/, '');
+  return `${assetBaseUrl}/${normalizedPath}`;
+};
+
 
 const favoriteMenu = {
   id: 'favorite',
   name: '\u6536\u85cf',
 };
+
+const pickFirstNonEmpty = (...values) =>
+  values.find((value) => value !== undefined && value !== null && String(value).trim() !== '');
 
 export default function CanteenPage({
   cartCount,
@@ -145,19 +72,174 @@ export default function CanteenPage({
   onAddDish,
   usertype,
 }) {
-  const [activeMenuId, setActiveMenuId] = useState(menus[0].id);
+  const { userId } = useAuth();
+  const [activeMenuId, setActiveMenuId] = useState('');
+  const [apiMenus, setApiMenus] = useState([]);
+  const [apiDishes, setApiDishes] = useState([]);
+  const [editError, setEditError] = useState('');
+  const [editorMode, setEditorMode] = useState('add');
   const [editorTitle, setEditorTitle] = useState('');
+  const [editorType, setEditorType] = useState('');
+  const [cartSummary, setCartSummary] = useState({ count: 0, totalPrice: 0 });
+  const [cartLoadingIds, setCartLoadingIds] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
+  const [favoriteLoadingIds, setFavoriteLoadingIds] = useState([]);
   const [keyword, setKeyword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [menuForm, setMenuForm] = useState({
+    menuId: '',
+    menuName: '',
+    remark: '',
+  });
+  const [dishForm, setDishForm] = useState({
+    dishId: '',
+    dishName: '',
+    dishPrice: '',
+    dishIntroduction: '',
+    menuId: '',
+  });
+  const [dishCover, setDishCover] = useState({
+    previewUri: '',
+    fileName: '',
+    uploadFile: null,
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const isAdmin = usertype === 'admin';
 
-  const menuItems = useMemo(
-    () => (isAdmin ? menus : [favoriteMenu, ...menus]),
-    [isAdmin]
+  const loadMenus = useCallback(async () => {
+    const result = await getMenuList();
+    setApiMenus(result);
+    setActiveMenuId((current) => {
+      if (
+        current &&
+        result.some((menu) => String(pickFirstNonEmpty(menu.menuId, menu.id) || '') === current)
+      ) {
+        return current;
+      }
+
+      return String(pickFirstNonEmpty(result[0]?.menuId, result[0]?.id) || '');
+    });
+  }, []);
+
+  const loadDishes = useCallback(async () => {
+    const result = await getDishList();
+    const dishesWithImage = await Promise.all(
+      result.map(async (dish) => {
+        const dishId = String(pickFirstNonEmpty(dish.dishId, dish.id) || '');
+
+        if (!dishId) {
+          return dish;
+        }
+
+        try {
+          const imageInfo = await getDishImage(dishId);
+          return {
+            ...dish,
+            dishImage: buildImageUrl(
+              pickFirstNonEmpty(dish.dishImage, imageInfo?.image_url)
+            ),
+          };
+        } catch {
+          return {
+            ...dish,
+            dishImage: buildImageUrl(dish.dishImage),
+          };
+        }
+      })
+    );
+
+    setApiDishes(dishesWithImage);
+  }, []);
+
+  const loadFavorites = useCallback(async () => {
+    if (isAdmin || !userId) {
+      setFavoriteIds([]);
+      return;
+    }
+
+    const result = await getCollectList({ userId });
+    setFavoriteIds(result.map((item) => item.dishId));
+  }, [isAdmin, userId]);
+
+  const loadCartSummary = useCallback(async () => {
+    if (isAdmin || !userId) {
+      setCartSummary({ count: 0, totalPrice: 0 });
+      return;
+    }
+
+    const result = await getCart(userId);
+    const cartData = result?.data;
+
+    if (!cartData || typeof cartData !== 'object' || !('items' in cartData)) {
+      setCartSummary({ count: 0, totalPrice: 0 });
+      return;
+    }
+
+    const items = Array.isArray(cartData.items) ? cartData.items : [];
+    const count = items.reduce((sum, item) => sum + Number(item.dishNum || 0), 0);
+    setCartSummary({
+      count,
+      totalPrice: Number(cartData.totalPrice || 0),
+    });
+  }, [isAdmin, userId]);
+
+  const loadCanteenData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setEditError('');
+      await Promise.all([loadMenus(), loadDishes(), loadFavorites(), loadCartSummary()]);
+    } catch (requestError) {
+      setEditError(requestError instanceof Error ? requestError.message : '\u83b7\u53d6\u83dc\u5355\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCartSummary, loadDishes, loadFavorites, loadMenus]);
+
+  useEffect(() => {
+    loadCanteenData();
+  }, [loadCanteenData]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadCartSummary();
+    });
+
+    return unsubscribe;
+  }, [loadCartSummary, navigation]);
+
+  const normalizedMenus = useMemo(
+    () =>
+      apiMenus.map((menu) => {
+        const menuId = String(pickFirstNonEmpty(menu.menuId, menu.id) || '');
+        const menuName = String(pickFirstNonEmpty(menu.menuName, menu.name) || '');
+        return {
+          ...menu,
+          menuId,
+          menuName,
+        };
+      }),
+    [apiMenus]
   );
 
-  const allDishes = useMemo(() => menus.flatMap((menu) => menu.dishes), []);
+  const menuItems = useMemo(
+    () => (isAdmin ? normalizedMenus : [favoriteMenu, ...normalizedMenus]),
+    [isAdmin, normalizedMenus]
+  );
+
+  const allDishes = useMemo(
+    () =>
+      apiDishes.map((dish) => ({
+        ...dish,
+        id: String(pickFirstNonEmpty(dish.dishId, dish.id) || ''),
+        name: dish.dishName,
+        price: String(dish.dishPrice),
+        desc: dish.dishIntroduction || '',
+        menuId: String(pickFirstNonEmpty(dish.menuId, dish.menuID) || ''),
+        menuName: String(pickFirstNonEmpty(dish.menuName, dish.menu) || ''),
+        dishImage: buildImageUrl(dish.dishImage),
+      })),
+    [apiDishes]
+  );
 
   const favoriteDishes = useMemo(
     () => allDishes.filter((dish) => favoriteIds.includes(dish.id)),
@@ -165,8 +247,8 @@ export default function CanteenPage({
   );
 
   const activeMenu = useMemo(
-    () => menus.find((menu) => menu.id === activeMenuId) || menus[0],
-    [activeMenuId]
+    () => normalizedMenus.find((menu) => menu.menuId === activeMenuId) || normalizedMenus[0],
+    [activeMenuId, normalizedMenus]
   );
 
   const dishes = useMemo(() => {
@@ -174,7 +256,22 @@ export default function CanteenPage({
     const sourceDishes =
       !isAdmin && activeMenuId === favoriteMenu.id
         ? favoriteDishes
-        : activeMenu.dishes;
+        : allDishes.filter((dish) => {
+            if (!activeMenu) {
+              return false;
+            }
+
+            const sameMenuId =
+              dish.menuId &&
+              activeMenu.menuId &&
+              String(dish.menuId) === String(activeMenu.menuId);
+            const sameMenuName =
+              dish.menuName &&
+              activeMenu.menuName &&
+              String(dish.menuName) === String(activeMenu.menuName);
+
+            return Boolean(sameMenuId || sameMenuName);
+          });
 
     if (!query) {
       return sourceDishes;
@@ -183,41 +280,290 @@ export default function CanteenPage({
     return sourceDishes.filter((dish) =>
       [dish.name, dish.price, dish.desc].join(' ').toLowerCase().includes(query)
     );
-  }, [activeMenu, activeMenuId, favoriteDishes, isAdmin, keyword]);
+  }, [activeMenu, activeMenuId, allDishes, favoriteDishes, isAdmin, keyword]);
 
   const toggleFavorite = (dish) => {
-    setFavoriteIds((current) => {
-      if (current.includes(dish.id)) {
-        return current.filter((id) => id !== dish.id);
-      }
+    if (!userId) {
+      setEditError('\u8bf7\u5148\u767b\u5f55\u518d\u6536\u85cf');
+      return;
+    }
 
-      return [...current, dish.id];
-    });
+    const isCollected = favoriteIds.includes(dish.id);
+    setFavoriteLoadingIds((current) => [...current, dish.id]);
+    setEditError('');
+
+    const action = isCollected
+      ? deleteCollect({ userId, dishId: dish.id })
+      : addCollect({ userId, dishId: dish.id, linkUrl: '' });
+
+    Promise.resolve(action)
+      .then((result) => {
+        if (!isCollected && result.code === 409) {
+          setEditError(result.message || '\u60a8\u5df2\u7ecf\u6536\u85cf\u8fc7\u8fd9\u9053\u83dc\u4e86');
+          return;
+        }
+
+        if (!isCollected && result.code === 400) {
+          setEditError(result.message || '\u6536\u85cf\u5931\u8d25');
+          return;
+        }
+
+        if (isCollected && result && typeof result === 'object' && 'success' in result && !result.success) {
+          setEditError(result.message || '\u53d6\u6d88\u6536\u85cf\u5931\u8d25');
+          return;
+        }
+
+        setFavoriteIds((current) => {
+          if (isCollected) {
+            return current.filter((id) => id !== dish.id);
+          }
+
+          return [...current, dish.id];
+        });
+      })
+      .catch((requestError) => {
+        setEditError(
+          requestError instanceof Error
+            ? requestError.message
+            : isCollected
+              ? '\u53d6\u6d88\u6536\u85cf\u5931\u8d25'
+              : '\u6536\u85cf\u5931\u8d25',
+        );
+      })
+      .finally(() => {
+        setFavoriteLoadingIds((current) => current.filter((id) => id !== dish.id));
+      });
   };
 
-  const openEditor = (title) => {
-    setEditorTitle(title);
+  const handleAddToCart = async (dish) => {
+    if (isAdmin) {
+      return;
+    }
+
+    if (!userId) {
+      setEditError('\u8bf7\u5148\u767b\u5f55\u518d\u52a0\u5165\u8d2d\u7269\u8f66');
+      return;
+    }
+
+    try {
+      setCartLoadingIds((current) => [...current, dish.id]);
+      setEditError('');
+      await addCart({
+        userId,
+        dishId: dish.id,
+        dishName: dish.name,
+        dishPrice: Number(dish.price),
+        dishNum: 1,
+      });
+      await loadCartSummary();
+      if (typeof onAddDish === 'function') {
+        onAddDish(dish);
+      }
+    } catch (requestError) {
+      setEditError(requestError instanceof Error ? requestError.message : '\u52a0\u5165\u8d2d\u7269\u8f66\u5931\u8d25');
+    } finally {
+      setCartLoadingIds((current) => current.filter((id) => id !== dish.id));
+    }
+  };
+
+  const displayCartTotal = userId && !isAdmin ? cartSummary.totalPrice : cartTotal;
+
+  const openMenuEditor = (mode, menu) => {
+    setEditorMode(mode);
+    setEditorType('menu');
+    setEditorTitle(mode === 'add' ? '\u6dfb\u52a0\u83dc\u5355' : '\u7f16\u8f91\u83dc\u5355');
+    setEditError('');
+    setMenuForm({
+      menuId: menu?.menuId || '',
+      menuName: menu?.menuName || '',
+      remark: menu?.remark || '',
+    });
     setModalVisible(true);
   };
 
+  const openDishEditor = (mode, dish) => {
+    setEditorMode(mode);
+    setEditorType('dish');
+    setEditorTitle(mode === 'add' ? '\u6dfb\u52a0\u83dc\u54c1' : '\u7f16\u8f91\u83dc\u54c1');
+    setEditError('');
+    setDishForm({
+      dishId: dish?.dishId || '',
+      dishName: dish?.dishName || '',
+      dishPrice: dish?.dishPrice === undefined ? '' : String(dish.dishPrice),
+      dishIntroduction: dish?.dishIntroduction || '',
+      menuId: dish?.menuId || activeMenuId,
+    });
+    setDishCover({
+      previewUri: dish?.dishImage || '',
+      fileName: '',
+      uploadFile: null,
+    });
+    setModalVisible(true);
+  };
+
+  const updateMenuForm = (field, value) => {
+    setMenuForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const updateDishForm = (field, value) => {
+    setDishForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const closeEditor = () => {
+    setModalVisible(false);
+    setEditError('');
+    setDishCover({
+      previewUri: '',
+      fileName: '',
+      uploadFile: null,
+    });
+  };
+
+  const handlePickDishCover = async () => {
+    try {
+      setEditError('');
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'image/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const fileName = asset.name || `${dishForm.dishId || 'dish'}-cover.jpg`;
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const uploadFile = {
+        uri: asset.uri,
+        name: fileName,
+        type: mimeType,
+      };
+
+      setDishCover({
+        previewUri: asset.uri,
+        fileName,
+        uploadFile,
+      });
+    } catch (requestError) {
+      setEditError(requestError instanceof Error ? requestError.message : '\u9009\u62e9\u5c01\u9762\u5931\u8d25');
+    }
+  };
+
+  const submitMenuForm = async () => {
+    if (!menuForm.menuId || !menuForm.menuName) {
+      setEditError('\u8bf7\u586b\u5199\u83dc\u5355ID\u548c\u83dc\u5355\u540d\u79f0');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setEditError('');
+      if (editorMode === 'add') {
+        await addMenu(menuForm);
+      } else {
+        await updateMenu(menuForm);
+      }
+      await loadCanteenData();
+      closeEditor();
+    } catch (requestError) {
+      setEditError(requestError instanceof Error ? requestError.message : '\u4fdd\u5b58\u83dc\u5355\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitDishForm = async () => {
+    if (!dishForm.dishId || !dishForm.dishName || !dishForm.dishPrice || !dishForm.menuId) {
+      setEditError('\u8bf7\u586b\u5199\u83dc\u54c1ID\u3001\u540d\u79f0\u3001\u4ef7\u683c\u548c\u6240\u5c5e\u83dc\u5355');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setEditError('');
+      if (editorMode === 'add') {
+        await addDish(dishForm);
+      } else {
+        await updateDish(dishForm);
+      }
+
+      if (dishCover.uploadFile) {
+        await uploadDishImage({
+          dishId: dishForm.dishId,
+          dishName: dishForm.dishName,
+          file: dishCover.uploadFile,
+        });
+      }
+
+      await loadCanteenData();
+      closeEditor();
+    } catch (requestError) {
+      setEditError(
+        requestError instanceof Error
+          ? requestError.message
+          : '\u4fdd\u5b58\u83dc\u54c1\u6216\u4e0a\u4f20\u5c01\u9762\u5931\u8d25'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteMenu = async () => {
+    try {
+      setLoading(true);
+      setEditError('');
+      await deleteMenu({ menuId: menuForm.menuId });
+      await loadCanteenData();
+      closeEditor();
+    } catch (requestError) {
+      setEditError(requestError instanceof Error ? requestError.message : '\u5220\u9664\u83dc\u5355\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDish = async () => {
+    try {
+      setLoading(true);
+      setEditError('');
+      await deleteDish({ dishId: dishForm.dishId });
+      await loadCanteenData();
+      closeEditor();
+    } catch (requestError) {
+      setEditError(requestError instanceof Error ? requestError.message : '\u5220\u9664\u83dc\u54c1\u5931\u8d25');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderMenu = ({ item }) => {
-    const isActive = item.id === activeMenuId;
+    const itemId = item.id || item.menuId;
+    const itemName = item.name || item.menuName;
+    const isActive = itemId === activeMenuId;
 
     return (
       <View style={[styles.menuButton, isActive && styles.activeMenuButton]}>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => setActiveMenuId(item.id)}
+          onPress={() => setActiveMenuId(itemId)}
           style={styles.menuNameButton}
         >
           <Text style={[styles.menuText, isActive && styles.activeMenuText]}>
-            {item.name}
+            {itemName}
           </Text>
         </TouchableOpacity>
-        {isAdmin && (
+        {isAdmin && item.menuId && (
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => openEditor('\u7f16\u8f91\u83dc\u5355')}
+            onPress={() => openMenuEditor('edit', item)}
             style={styles.menuEditButton}
           >
             <Text style={styles.menuEditText}>{'\u7f16\u8f91'}</Text>
@@ -229,6 +575,12 @@ export default function CanteenPage({
 
   const renderDish = ({ item }) => (
     <View style={styles.dishCard}>
+      {item.dishImage ? (
+        <Image
+          source={{ uri: item.dishImage }}
+          style={styles.dishCover}
+        />
+      ) : null}
       <View style={styles.dishHeader}>
         <TouchableOpacity
           activeOpacity={0.75}
@@ -244,6 +596,7 @@ export default function CanteenPage({
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => toggleFavorite(item)}
+              disabled={favoriteLoadingIds.includes(item.id)}
               style={[
                 styles.favoriteButton,
                 favoriteIds.includes(item.id) && styles.activeFavoriteButton,
@@ -256,26 +609,38 @@ export default function CanteenPage({
                     styles.activeFavoriteButtonText,
                 ]}
               >
-                {favoriteIds.includes(item.id) ? '\u5df2\u85cf' : '\u6536\u85cf'}
+                {favoriteLoadingIds.includes(item.id)
+                  ? '\u5904\u7406\u4e2d'
+                  : favoriteIds.includes(item.id)
+                    ? '\u5df2\u85cf'
+                    : '\u6536\u85cf'}
               </Text>
             </TouchableOpacity>
           )}
           {isAdmin && (
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => openEditor('\u7f16\u8f91\u83dc\u54c1')}
+              onPress={() => openDishEditor('edit', item)}
               style={styles.dishEditButton}
             >
               <Text style={styles.dishEditButtonText}>{'\u7f16\u8f91'}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => onAddDish(item)}
-            style={styles.addButton}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
+          {!isAdmin ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={cartLoadingIds.includes(item.id)}
+              onPress={() => handleAddToCart(item)}
+              style={[
+                styles.addButton,
+                cartLoadingIds.includes(item.id) && styles.disabledActionButton,
+              ]}
+            >
+              <Text style={styles.addButtonText}>
+                {cartLoadingIds.includes(item.id) ? '...' : '+'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
     </View>
@@ -313,6 +678,7 @@ export default function CanteenPage({
           style={styles.searchInput}
           value={keyword}
         />
+        {!modalVisible && editError ? <Text style={styles.pageError}>{editError}</Text> : null}
       </View>
 
       <View style={styles.mainArea}>
@@ -320,12 +686,12 @@ export default function CanteenPage({
           <FlatList
             contentContainerStyle={styles.menuList}
             data={menuItems}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id || item.menuId}
             ListFooterComponent={
               isAdmin ? (
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => openEditor('\u6dfb\u52a0\u83dc\u5355')}
+                  onPress={() => openMenuEditor('add')}
                   style={styles.menuAddButton}
                 >
                   <Text style={styles.menuAddText}>+</Text>
@@ -342,6 +708,17 @@ export default function CanteenPage({
             contentContainerStyle={styles.dishList}
             data={dishes}
             keyExtractor={(item) => item.id}
+            ListFooterComponent={
+              isAdmin && activeMenuId ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => openDishEditor('add')}
+                  style={styles.dishAddButton}
+                >
+                  <Text style={styles.dishAddText}>{'\u6dfb\u52a0\u83dc\u54c1'}</Text>
+                </TouchableOpacity>
+              ) : null
+            }
             ListEmptyComponent={
               <Text style={styles.emptyText}>
                 {!isAdmin && activeMenuId === favoriteMenu.id
@@ -357,8 +734,7 @@ export default function CanteenPage({
 
       <View style={styles.cartBar}>
         <View>
-          <Text style={styles.cartTotal}>{'\u00a5'}{cartTotal}</Text>
-          <Text style={styles.cartCount}>{'\u5df2\u9009'} {cartCount} {'\u4ef6\u83dc\u54c1'}</Text>
+          <Text style={styles.cartTotal}>{'\u00a5'}{displayCartTotal}</Text>
         </View>
         <TouchableOpacity
           activeOpacity={0.85}
@@ -378,10 +754,152 @@ export default function CanteenPage({
         <View style={styles.modalBackdrop}>
           <View style={styles.modalPanel}>
             <Text style={styles.modalTitle}>{editorTitle}</Text>
-            <View style={styles.modalPlaceholder} />
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {editorType === 'menu' ? (
+                <View style={styles.editorForm}>
+                  <Text style={styles.editorLabel}>{'菜单id'}</Text>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={editorMode === 'add'}
+                    onChangeText={(value) => updateMenuForm('menuId', value)}
+                    placeholder={'\u83dc\u5355ID'}
+                    placeholderTextColor="#9ca3af"
+                    style={[styles.editorInput, editorMode === 'edit' && styles.disabledInput]}
+                    value={menuForm.menuId}
+                  />
+                  <Text style={styles.editorLabel}>{'菜单名称'}</Text>
+                  <TextInput
+                    autoCorrect={false}
+                    onChangeText={(value) => updateMenuForm('menuName', value)}
+                    placeholder={'\u83dc\u5355\u540d\u79f0'}
+                    placeholderTextColor="#9ca3af"
+                    style={styles.editorInput}
+                    value={menuForm.menuName}
+                  />
+                  <Text style={styles.editorLabel}>{'备注'}</Text>
+                  <TextInput
+                    autoCorrect={false}
+                    multiline
+                    onChangeText={(value) => updateMenuForm('remark', value)}
+                    placeholder={'\u5907\u6ce8'}
+                    placeholderTextColor="#9ca3af"
+                    style={[styles.editorInput, styles.editorTextArea]}
+                    textAlignVertical="top"
+                    value={menuForm.remark}
+                  />
+                </View>
+              ) : (
+                <View style={styles.editorForm}>
+                  <Text style={styles.editorLabel}>{'菜品ID'}</Text>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={editorMode === 'add'}
+                    onChangeText={(value) => updateDishForm('dishId', value)}
+                    placeholder={'\u83dc\u54c1ID'}
+                    placeholderTextColor="#9ca3af"
+                    style={[styles.editorInput, editorMode === 'edit' && styles.disabledInput]}
+                    value={dishForm.dishId}
+                  />
+                  <Text style={styles.editorLabel}>{'菜品名称'}</Text>
+                  <TextInput
+                    autoCorrect={false}
+                    onChangeText={(value) => updateDishForm('dishName', value)}
+                    placeholder={'\u83dc\u54c1\u540d\u79f0'}
+                    placeholderTextColor="#9ca3af"
+                    style={styles.editorInput}
+                    value={dishForm.dishName}
+                  />
+                  <Text style={styles.editorLabel}>{'菜品价格'}</Text>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="numeric"
+                    onChangeText={(value) => updateDishForm('dishPrice', value)}
+                    placeholder={'\u83dc\u54c1\u4ef7\u683c'}
+                    placeholderTextColor="#9ca3af"
+                    style={styles.editorInput}
+                    value={dishForm.dishPrice}
+                  />
+                  <Text style={styles.editorLabel}>{'所属菜单ID'}</Text>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={(value) => updateDishForm('menuId', value)}
+                    placeholder={'\u6240\u5c5e\u83dc\u5355ID'}
+                    placeholderTextColor="#9ca3af"
+                    style={styles.editorInput}
+                    value={dishForm.menuId}
+                  />
+                  <Text style={styles.editorLabel}>{'菜品介绍'}</Text>
+                  <TextInput
+                    autoCorrect={false}
+                    multiline
+                    onChangeText={(value) => updateDishForm('dishIntroduction', value)}
+                    placeholder={'\u83dc\u54c1\u4ecb\u7ecd'}
+                    placeholderTextColor="#9ca3af"
+                    style={[styles.editorInput, styles.editorTextArea]}
+                    textAlignVertical="top"
+                    value={dishForm.dishIntroduction}
+                  />
+                  <Text style={styles.editorLabel}>{'封面图片'}</Text>
+                  {dishCover.previewUri ? (
+                    <Image
+                      source={{ uri: dishCover.previewUri }}
+                      style={styles.coverPreview}
+                    />
+                  ) : (
+                    <View style={styles.coverPlaceholder}>
+                      <Text style={styles.coverPlaceholderText}>{'暂未选择封面'}</Text>
+                    </View>
+                  )}
+                  {dishCover.fileName ? (
+                    <Text style={styles.coverFileName}>{dishCover.fileName}</Text>
+                  ) : null}
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    disabled={loading}
+                    onPress={handlePickDishCover}
+                    style={[styles.coverUploadButton, loading && styles.disabledActionButton]}
+                  >
+                    <Text style={styles.coverUploadButtonText}>
+                      {dishCover.previewUri ? '重新选择封面' : '上传封面'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
+            {editError ? <Text style={styles.editorError}>{editError}</Text> : null}
+            <View style={styles.modalActions}>
+              {editorMode === 'edit' ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  disabled={loading}
+                  onPress={editorType === 'menu' ? handleDeleteMenu : handleDeleteDish}
+                  style={[styles.modalDeleteButton, loading && styles.disabledActionButton]}
+                >
+                  <Text style={styles.modalDeleteText}>{'\u5220\u9664'}</Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                disabled={loading}
+                onPress={editorType === 'menu' ? submitMenuForm : submitDishForm}
+                style={[styles.modalSaveButton, loading && styles.disabledActionButton]}
+              >
+                <Text style={styles.modalSaveText}>
+                  {loading ? '\u4fdd\u5b58\u4e2d...' : '\u4fdd\u5b58'}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => setModalVisible(false)}
+              onPress={closeEditor}
               style={styles.modalCloseButton}
             >
               <Text style={styles.modalCloseText}>{'\u5173\u95ed'}</Text>
@@ -404,7 +922,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 58,
+    minHeight: TOP_BAR_MIN_HEIGHT,
+    paddingTop: TOP_BAR_PADDING_TOP,
     paddingHorizontal: 16,
   },
   topBarButton: {
@@ -453,6 +972,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 50,
     paddingHorizontal: 14,
+  },
+  pageError: {
+    color: '#dc2626',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
   mainArea: {
     flex: 1,
@@ -533,7 +1058,7 @@ const styles = StyleSheet.create({
   },
   dishList: {
     gap: 12,
-    paddingBottom: 24,
+    paddingBottom: 24 + BOTTOM_SAFE_PADDING,
     paddingTop: 12,
   },
   dishCard: {
@@ -542,6 +1067,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     padding: 14,
+  },
+  dishCover: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    height: 150,
+    marginBottom: 12,
+    width: '100%',
   },
   dishHeader: {
     alignItems: 'flex-start',
@@ -607,6 +1139,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
+  dishAddButton: {
+    alignItems: 'center',
+    backgroundColor: '#0f766e',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  dishAddText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+  },
   addButton: {
     alignItems: 'center',
     backgroundColor: '#0f766e',
@@ -633,19 +1177,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 70,
+    minHeight: 70 + BOTTOM_SAFE_PADDING,
+    paddingBottom: Math.max(BOTTOM_SAFE_PADDING, 10),
     paddingHorizontal: 16,
   },
   cartTotal: {
     color: '#dc2626',
     fontSize: 20,
     fontWeight: '900',
-  },
-  cartCount: {
-    color: '#6b7280',
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 3,
   },
   cartButton: {
     alignItems: 'center',
@@ -677,14 +1216,127 @@ const styles = StyleSheet.create({
   modalPanel: {
     backgroundColor: '#ffffff',
     borderRadius: 8,
+    maxHeight: '85%',
     padding: 18,
     width: '100%',
+  },
+  modalScrollContent: {
+    paddingBottom: 4,
   },
   modalTitle: {
     color: '#111827',
     fontSize: 19,
     fontWeight: '900',
     marginBottom: 14,
+  },
+  editorForm: {
+    gap: 10,
+  },
+  editorLabel: {
+    color: '#374151',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  editorInput: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: '#111827',
+    fontSize: 15,
+    minHeight: 46,
+    paddingHorizontal: 12,
+  },
+  disabledInput: {
+    backgroundColor: '#f3f4f6',
+    color: '#6b7280',
+  },
+  editorTextArea: {
+    minHeight: 86,
+    paddingTop: 12,
+  },
+  coverPreview: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    height: 160,
+    width: '100%',
+  },
+  coverPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    height: 120,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  coverPlaceholderText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  coverFileName: {
+    color: '#4b5563',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  coverUploadButton: {
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    borderColor: '#93c5fd',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: 14,
+  },
+  coverUploadButtonText: {
+    color: '#1d4ed8',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  editorError: {
+    color: '#dc2626',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  modalSaveButton: {
+    alignItems: 'center',
+    backgroundColor: '#0f766e',
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 46,
+  },
+  modalSaveText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  modalDeleteButton: {
+    alignItems: 'center',
+    backgroundColor: '#dc2626',
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 46,
+  },
+  modalDeleteText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  disabledActionButton: {
+    opacity: 0.65,
   },
   modalPlaceholder: {
     backgroundColor: '#f9fafb',

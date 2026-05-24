@@ -41,7 +41,7 @@ export type MerchantNewOrderNotice = {
 
 type SubscribeMerchantNewOrdersParams = {
   onMessage: (payload: MerchantNewOrderNotice) => void
-  onError?: (error: Event | CloseEvent) => void
+  onError?: (error: unknown) => void
 }
 
 function buildStompFrame(command: string, headers: Record<string, string>, body = '') {
@@ -62,6 +62,14 @@ function parseStompBody(frame: string) {
   return rawBody.replace(/\u0000/g, '').trim()
 }
 
+function getHostFromWsUrl(wsUrl: string) {
+  try {
+    return new URL(wsUrl).host
+  } catch {
+    return ''
+  }
+}
+
 export function subscribeMerchantNewOrders({
   onMessage,
   onError,
@@ -79,6 +87,7 @@ export function subscribeMerchantNewOrders({
       buildStompFrame('CONNECT', {
         'accept-version': '1.2',
         'heart-beat': '0,0',
+        host: getHostFromWsUrl(WS_URL),
       }),
     )
   }
@@ -95,6 +104,10 @@ export function subscribeMerchantNewOrders({
       return
     }
     if (!frame.startsWith('MESSAGE')) {
+      if (frame.startsWith('ERROR')) {
+        const errorBody = parseStompBody(frame) || 'STOMP broker rejected CONNECT/SUBSCRIBE'
+        onError?.(new Error(errorBody))
+      }
       return
     }
     try {
@@ -126,6 +139,34 @@ export function subscribeMerchantNewOrders({
       ws.close()
     }
   }
+}
+
+export function formatWsError(error: unknown) {
+  if (error && typeof error === 'object') {
+    const maybeEvent = error as {
+      code?: number
+      reason?: string
+      message?: string
+      type?: string
+    }
+
+    const codeText = typeof maybeEvent.code === 'number' ? ` code=${maybeEvent.code}` : ''
+    const reasonText = maybeEvent.reason ? ` reason=${maybeEvent.reason}` : ''
+    const messageText = maybeEvent.message ? ` message=${maybeEvent.message}` : ''
+    const typeText = maybeEvent.type ? ` type=${maybeEvent.type}` : ''
+    const details = `${codeText}${reasonText}${messageText}${typeText}`.trim()
+    const code = maybeEvent.code
+    if (code === 1000) {
+      return 'WebSocket 连接已正常关闭'
+    }
+    return details ? `WebSocket 连接异常:${details}` : 'WebSocket 连接异常'
+  }
+
+  if (error instanceof Error) {
+    return `WebSocket 连接异常: ${error.message}`
+  }
+
+  return 'WebSocket 连接异常'
 }
 
 export function getAllOrders(params?: GetAllOrdersParams) {

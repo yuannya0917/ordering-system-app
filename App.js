@@ -26,7 +26,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [cartItems, setCartItems] = useState([]);
   const [userId, setUserId] = useState('');
-  const [usertype, setUsertype] = useState('admin');
+  const [usertype, setUsertype] = useState('customer');
 
   const handleLoginSuccess = (user) => {
     setUserId(user.userId);
@@ -97,7 +97,7 @@ export default function App() {
             },
           }}
         >
-          <Stack.Screen name="Login" component={UserCenterPage} />
+          <Stack.Screen name="Login" component={LoginPage} />
           <Stack.Screen name="Register" component={RegisterPage} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
           <Stack.Screen name="RoleSelect">

@@ -1,9 +1,13 @@
-import { api } from '../request'
+import { requestRaw } from '../request'
 
 export type DeleteAccountParams = {
   userId: string
+  currentUserId: string
 }
 
 export function deleteAccount(params: DeleteAccountParams) {
-  return api.delete('/account/delete', { params })
+  return requestRaw<null>('/auth/delete', {
+    method: 'DELETE',
+    body: params,
+  })
 }
